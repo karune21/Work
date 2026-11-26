@@ -308,7 +308,7 @@ async function delKeyImg(k){
 async function saveKey(){
   const v=$('#keyText').value.trim();
   await safe(()=>update(ref(db,'answerKeys/'+S.openId),{text:v||null}));
-  document.activeElement.blur();toast(v?'บันทึกเฉลยแล้ว':'ลบเฉลยแล้ว');renderDetail();
+  document.activeElement.blur();const hasImg=Object.keys(S.kimgs[S.openId]||{}).length>0;toast(v||hasImg?'บันทึกเฉลยแล้ว':'ลบเฉลยแล้ว');renderDetail();
 }
 async function saveTask(){
   const subject=$('#fSubject').value.trim(),title=$('#fTitle').value.trim(),due=$('#fDue').value;
