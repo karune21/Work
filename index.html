@@ -117,6 +117,7 @@ textarea.field{min-height:120px;resize:none;line-height:1.6}
   <label for="fSubject">วิชา</label><input class="field" id="fSubject" list="subjectList" placeholder="เช่น คณิตศาสตร์" autocomplete="off"><datalist id="subjectList"></datalist>
   <label for="fTitle">ชื่องาน</label><input class="field" id="fTitle" placeholder="เช่น แบบฝึกหัดบทที่ 3" autocomplete="off">
   <label for="fDue">กำหนดส่ง</label><input class="field" id="fDue" type="date">
+  <label for="fDetail">รายละเอียดงาน (ไม่บังคับ)</label><textarea class="field" id="fDetail" placeholder="เช่น หน้า 45-47 ข้อ 1-10 หรือวางลิงก์"></textarea>
   <div class="acts"><button class="btn ghost" data-close>ยกเลิก</button><button class="btn primary" id="taskSave">บันทึกงาน</button></div>
 </div></div>
 <div class="sheet" id="sheetBulk"><div class="sin">
@@ -133,7 +134,7 @@ textarea.field{min-height:120px;resize:none;line-height:1.6}
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {getDatabase,ref,onValue,push,set,update,get} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
-import {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+import {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,signInWithEmailAndPassword,createUserWithEmailAndPassword,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 
 const cfg={
   apiKey:"AIzaSyB4vfR2nCgGMlNSNGl5a0iHlNaNI0LFHuM",
@@ -155,13 +156,17 @@ const onErr=e=>{console.error(e);$('#syncText').textContent='เชื่อม�
 const gate=h=>{$('#gate').hidden=false;$('#gate').innerHTML=h};
 
 /* ---------- ล็อกอิน ---------- */
-function login(){const p=new GoogleAuthProvider();signInWithPopup(auth,p).catch(e=>{if(e.code!=='auth/popup-closed-by-user')signInWithRedirect(auth,p)})}
+const gateForm=(t,x)=>`<h2>${t}</h2><p class="hint">${x}</p><button class="btn primary block" data-act="login">เข้าสู่ระบบด้วย Google</button><p class="hint" style="text-align:center">หรือใช้อีเมล</p><input class="field" id="em" type="email" placeholder="อีเมล" autocomplete="email"><input class="field" id="pw" type="password" placeholder="รหัสผ่าน (6 ตัวขึ้นไป)" autocomplete="current-password"><div style="display:flex;gap:10px"><button class="btn primary" style="flex:1" data-act="emlogin">เข้าสู่ระบบ</button><button class="btn ghost" style="flex:1" data-act="emnew">สมัครใหม่</button></div><p class="hint" id="gerr" style="color:#E5484D"></p>`;
+const gerr=e=>{const m=$('#gerr');if(m)m.textContent='ไม่สำเร็จ: '+(e.code||e.message)};
+const cred=()=>[$('#em').value.trim(),$('#pw').value];
+function login(){const p=new GoogleAuthProvider();signInWithPopup(auth,p).catch(e=>{if(e.code==='auth/popup-closed-by-user')return;if(e.code==='auth/popup-blocked')signInWithRedirect(auth,p);else gerr(e)})}
+getRedirectResult(auth).catch(e=>setTimeout(()=>gerr(e),600));
 let started=false;
 onAuthStateChanged(auth,async u=>{
-  if(!u){gate('<h2>เข้าสู่ระบบ</h2><p class="hint">สำหรับครู / แอดมิน</p><button class="btn primary block" data-act="login">เข้าสู่ระบบด้วย Google</button>');return}
+  if(!u){gate(gateForm('เข้าสู่ระบบ','สำหรับครู / แอดมิน'));return}
   let ok=false;
-  try{ok=(await get(ref(db,'admins/'+u.uid))).val()===true}catch(e){}
-  if(!ok){gate(`<h2>บัญชีนี้ไม่ใช่แอดมิน</h2><p>${esc(u.email||'')}</p><p class="hint">ให้เจ้าของโปรเจกต์เพิ่มใน Firebase Console:<br><code>admins/${esc(u.uid)}</code> = true</p><button class="btn ghost block" data-act="logout">ออกจากระบบ</button>`);return}
+  let why='';try{ok=(await get(ref(db,'admins/'+u.uid))).val()===true}catch(e){why=e.code||e.message}
+  if(!ok){gate(`<h2>บัญชีนี้ไม่ใช่แอดมิน</h2><p>${esc(u.email||'')}</p>${why?`<p class="hint">ข้อผิดพลาด: ${esc(why)}</p>`:''}<p class="hint">ให้เจ้าของโปรเจกต์เพิ่มใน Firebase Console:<br><code>admins/${esc(u.uid)}</code> = true</p><button class="btn ghost block" data-act="logout">ออกจากระบบ</button>`);return}
   $('#gate').hidden=true;
   if(!started){started=true;start()}
 });
@@ -227,7 +232,7 @@ function renderDetail(){
   const box=$('#detail'),a=S.assignments[S.openId];
   if(!S.openId||!a){box.classList.remove('open');if(S.openId&&!a)S.openId=null;return}
   box.classList.add('open');
-  if(document.activeElement&&document.activeElement.id==='keyText')return;
+  if(['keyText','detText'].includes(document.activeElement?.id))return;
   const st=studentList(),total=st.length,subs=S.subs[S.openId]||{},done=st.filter(s=>subs[s.id]).length,pct=total?Math.round(done/total*100):0;
   const di=dueInfo(a.due,total>0&&done===total),shown=S.pending?st.filter(s=>!subs[s.id]):st;
   const rows=!total?'<div class="empty"><h3>ยังไม่มีรายชื่อ</h3></div>':!shown.length?'<div class="empty"><h3>ส่งครบทุกคนแล้ว</h3></div>'
@@ -241,8 +246,9 @@ function renderDetail(){
     ${total-done?'<button class="btn ghost block" data-copy style="margin-bottom:12px">📋 คัดลอกข้อความทวงคนที่ยังไม่ส่ง</button>':''}
     <div class="seg"><button data-filter="all" class="${S.pending?'':'active'}">ทั้งหมด (${total})</button><button data-filter="pending" class="${S.pending?'active':''}">ยังไม่ส่ง (${total-done})</button></div>
     ${rows}
+    <div class="key"><b>รายละเอียดงาน</b><textarea class="field" id="detText" placeholder="บอกว่าต้องทำอะไร หน้าไหน หรือวางลิงก์">${esc(a.detail||'')}</textarea><button class="btn primary block" data-savedet>บันทึกรายละเอียด</button></div>
     <div class="key"><b>เฉลยงาน</b><textarea class="field" id="keyText" placeholder="พิมพ์เฉลย หรือวางลิงก์ไฟล์เฉลย">${esc(S.keys[S.openId]?.text||'')}</textarea>
-    <button class="btn primary block" data-savekey>บันทึกเฉลย</button><p class="hint">นักเรียนเห็นเฉลยได้เมื่อกดส่งงานแล้วเท่านั้น</p></div>
+    <button class="btn primary block" data-savekey>บันทึกเฉลย</button><p class="hint">นักเรียนทุกคนที่ล็อกอินดูเฉลยได้ทันที</p></div>
     <div class="dz"><button class="btn danger block" data-del-task>ลบงานนี้</button></div>`;
   box.scrollTop=top;
 }
@@ -274,6 +280,10 @@ async function deleteTask(){
   const id=S.openId;S.openId=null;
   await safe(()=>update(ref(db),{[`assignments/${id}`]:null,[`submissions/${id}`]:null,[`answerKeys/${id}`]:null,[`evidence/${id}`]:null}));
 }
+async function saveDet(){
+  await safe(()=>set(ref(db,`assignments/${S.openId}/detail`),$('#detText').value.trim()||null));
+  document.activeElement.blur();toast('บันทึกรายละเอียดแล้ว');renderDetail();
+}
 async function saveKey(){
   const v=$('#keyText').value.trim();
   await safe(()=>set(ref(db,'answerKeys/'+S.openId),v?{text:v}:null));
@@ -282,8 +292,8 @@ async function saveKey(){
 async function saveTask(){
   const subject=$('#fSubject').value.trim(),title=$('#fTitle').value.trim(),due=$('#fDue').value;
   if(!subject||!title)return toast('กรอกวิชาและชื่องานให้ครบ');
-  await safe(()=>set(ref(db,'assignments/'+push(ref(db,'assignments')).key),{subject,title,due,createdAt:Date.now()}));
-  closeSheets();$('#fTitle').value='';
+  await safe(()=>set(ref(db,'assignments/'+push(ref(db,'assignments')).key),{subject,title,due,detail:$('#fDetail').value.trim(),createdAt:Date.now()}));
+  closeSheets();$('#fTitle').value='';$('#fDetail').value='';
 }
 function copyChase(){
   const a=S.assignments[S.openId];if(!a)return;
@@ -307,6 +317,8 @@ const ymd=d=>{const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${
 document.addEventListener('click',e=>{
   const t=e.target.closest('button');if(!t)return;const d=t.dataset;
   if(d.act==='login')login();
+  else if(d.act==='emlogin'){const [a,b]=cred();signInWithEmailAndPassword(auth,a,b).catch(gerr)}
+  else if(d.act==='emnew'){const [a,b]=cred();createUserWithEmailAndPassword(auth,a,b).catch(gerr)}
   else if(d.act==='logout')signOut(auth);
   else if(d.tab){S.tab=d.tab;document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b===t));
     $('#viewTasks').classList.toggle('active',S.tab==='tasks');$('#viewPeople').classList.toggle('active',S.tab==='people');$('#viewKeys').classList.toggle('active',S.tab==='keys');
@@ -318,6 +330,7 @@ document.addEventListener('click',e=>{
   else if('back' in d){S.openId=null;render()}
   else if('delTask' in d)deleteTask();
   else if('savekey' in d)saveKey();
+  else if('savedet' in d)saveDet();
   else if(d.delStudent)deleteStudent(d.delStudent);
   else if('copy' in d)copyChase();
   else if(d.evid)showEv(d.evid);

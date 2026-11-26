@@ -49,6 +49,7 @@ h1{font-size:26px;font-weight:700}.who{font-size:14px;color:var(--mu)}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(255,255,255,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--ln);padding-bottom:env(safe-area-inset-bottom,0px)}.tabbar div{max-width:720px;margin:0 auto;display:flex;height:64px}.tab{flex:1;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:500;color:var(--mu)}.tab.active{color:var(--ac)}.btn.dis{background:var(--bg);color:var(--mu)}
 .alert{background:var(--soons);color:#6B4A0B;border:1px solid #F0DDAE;border-radius:16px;padding:12px 16px;margin-bottom:12px}.alert.late{background:var(--lates);color:#9B1C20;border-color:#F5C2C4}.alert b{display:block}.alert span{font-size:14px}
+.field{width:100%;min-height:52px;padding:12px 16px;border-radius:14px;border:1.5px solid var(--ln);background:var(--sf);font:inherit;color:inherit;-webkit-user-select:text;user-select:text}
 </style></head>
 <body>
 <div id="gate"><p>กำลังโหลด…</p></div>
@@ -68,7 +69,7 @@ h1{font-size:26px;font-weight:700}.who{font-size:14px;color:var(--mu)}
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {getDatabase,ref,onValue,set,update,get} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
-import {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+import {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,signInWithEmailAndPassword,createUserWithEmailAndPassword,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 
 const cfg={
   apiKey:"AIzaSyB4vfR2nCgGMlNSNGl5a0iHlNaNI0LFHuM",
@@ -86,10 +87,14 @@ let uid=null,ready=false,seen={},tt;
 
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2600)}
 const gate=h=>{$('#gate').hidden=false;$('#gate').innerHTML=h};
-function login(){const p=new GoogleAuthProvider();signInWithPopup(auth,p).catch(e=>{if(e.code!=='auth/popup-closed-by-user')signInWithRedirect(auth,p)})}
+const gateForm=(t,x)=>`<h2>${t}</h2><p class="hint">${x}</p><button class="btn primary block" data-act="login">เข้าสู่ระบบด้วย Google</button><p class="hint" style="text-align:center">หรือใช้อีเมล</p><input class="field" id="em" type="email" placeholder="อีเมล" autocomplete="email"><input class="field" id="pw" type="password" placeholder="รหัสผ่าน (6 ตัวขึ้นไป)" autocomplete="current-password"><div style="display:flex;gap:10px"><button class="btn primary" style="flex:1" data-act="emlogin">เข้าสู่ระบบ</button><button class="btn ghost" style="flex:1" data-act="emnew">สมัครใหม่</button></div><p class="hint" id="gerr" style="color:#E5484D"></p>`;
+const gerr=e=>{const m=$('#gerr');if(m)m.textContent='ไม่สำเร็จ: '+(e.code||e.message)};
+const cred=()=>[$('#em').value.trim(),$('#pw').value];
+function login(){const p=new GoogleAuthProvider();signInWithPopup(auth,p).catch(e=>{if(e.code==='auth/popup-closed-by-user')return;if(e.code==='auth/popup-blocked')signInWithRedirect(auth,p);else gerr(e)})}
+getRedirectResult(auth).catch(e=>setTimeout(()=>gerr(e),600));
 
 onAuthStateChanged(auth,async u=>{
-  if(!u){gate('<h2>เข้าสู่ระบบเพื่อส่งงาน</h2><p class="hint">ใช้บัญชี Google ของตัวเอง</p><button class="btn primary block" data-act="login">เข้าสู่ระบบด้วย Google</button>');return}
+  if(!u){gate(gateForm('เข้าสู่ระบบเพื่อส่งงาน','ใช้บัญชี Google หรืออีเมลของตัวเอง'));return}
   uid=u.uid;$('#gate').hidden=true;
   try{S.sid=(await get(ref(db,'users/'+uid))).val()}catch(e){S.sid=null}
   if(!ready){ready=true;onValue(ref(db,'students'),s=>{S.students=s.val()||{};render()},e=>toast('อ่านข้อมูลไม่ได้'))}
@@ -142,11 +147,11 @@ function render(){
   const late=all.filter(a=>!a.done&&dueInfo(a.due).cls==='late').length,soon=all.filter(a=>!a.done&&dueInfo(a.due).cls==='soon').length,todo=all.filter(a=>!a.done).length;
   document.querySelector('[data-tab=tasks]').textContent='งาน'+(todo?` (${todo})`:'');
   const banner=!keysTab&&(late||soon)?`<div class="alert ${late?'late':''}"><b>${late?`⚠️ เลยกำหนด ${late} งาน`:''}${late&&soon?' · ':''}${soon?`⏰ ใกล้ส่ง ${soon} งาน`:''}</b><span>รีบแนบหลักฐานแล้วกดส่งงาน</span></div>`:'';
-  $('#main').innerHTML=banner+chips+(list.length?'<div class="list">'+list.map(a=>{
+  $('#main').innerHTML=banner+chips+(list.length?'<p class="hint">แตะที่งานเพื่อดูรายละเอียดและเฉลย</p>':'')+(list.length?'<div class="list">'+list.map(a=>{
     const di=dueInfo(a.due),id=esc(a.id),ev=S.ev[a.id];
     const head=`<div class="th"><div><div class="subject"><i style="background:hsl(${hue(a.subject)} 62% 52%)"></i>${esc(a.subject||NS)}</div><h3>${esc(a.title)}</h3></div>`;
-    if(keysTab)return `<div class="card">${head}</div><div class="acts">${a.done?`<button class="btn ok" data-key="${id}">ดูเฉลย</button>`:'<button class="btn dis" data-lock>🔒 ส่งงานก่อนจึงจะดูเฉลยได้</button>'}</div></div>`;
-    return `<div class="card ${a.done?'done':''}">${head}<div class="due ${a.done?'':di.cls}"><b>${esc(di.label)}</b>${di.rel&&!a.done?`<span>${esc(di.rel)}</span>`:''}</div></div>
+    if(keysTab)return `<div class="card" data-card="${id}">${head}</div><div class="acts"><button class="btn ok" data-key="${id}">ดูเฉลย</button></div></div>`;
+    return `<div class="card ${a.done?'done':''}" data-card="${id}">${head}<div class="due ${a.done?'':di.cls}"><b>${esc(di.label)}</b>${di.rel&&!a.done?`<span>${esc(di.rel)}</span>`:''}</div></div>
       <div class="acts">${a.done?`<button class="btn ok" data-toggle="${id}">✓ ส่งแล้ว (กดยกเลิก)</button><button class="btn ghost" data-key="${id}">ดูเฉลย</button>`
       :`<button class="btn ghost" data-evid="${id}">📷 ${ev?'เปลี่ยนรูปหลักฐาน':'เพิ่มหลักฐาน'}</button><button class="btn ${ev?'primary':'dis'}" data-toggle="${id}">ส่งงาน</button>`}</div>
       ${!a.done&&ev?'<p class="hint" style="margin:10px 0 0">📎 แนบหลักฐานแล้ว</p>':''}</div>`}).join('')+'</div>'
@@ -165,10 +170,14 @@ async function toggle(aid){
   catch(e){console.error(e);S.mine[aid]=!on;render();toast('บันทึกไม่สำเร็จ')}
 }
 async function showKey(aid){
-  let txt='ยังไม่มีเฉลยสำหรับงานนี้';
-  try{const v=(await get(ref(db,'answerKeys/'+aid))).val();if(v&&v.text)txt=v.text}catch(e){txt='ดูเฉลยไม่ได้ (ต้องกดส่งงานแล้วก่อน)'}
-  $('#keyBody').innerHTML=esc(txt).replace(/https?:\/\/[^\s<]+/g,u=>`<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
+  const a=S.as[aid]||{},di=dueInfo(a.due);
+  const link=t=>esc(t).replace(/https?:\/\/[^\s<]+/g,u=>`<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
+  $('#sheet h2').textContent=a.title||'รายละเอียดงาน';
+  $('#keyBody').innerHTML=`<p class="hint">${esc(a.subject||NS)} · กำหนดส่ง ${esc(di.label)}${di.rel?' ('+esc(di.rel)+')':''}</p>`+(a.detail?`<b>รายละเอียด</b>\n${link(a.detail)}\n\n`:'')+'<b>เฉลย</b>\n<span id="kt">กำลังโหลด…</span>';
   $('#backdrop').classList.add('open');$('#sheet').classList.add('open');
+  let txt='ยังไม่มีเฉลยสำหรับงานนี้';
+  try{const v=(await get(ref(db,'answerKeys/'+aid))).val();if(v&&v.text)txt=v.text}catch(e){txt='ดูเฉลยไม่ได้ ลองรีเฟรชหน้า'}
+  $('#kt').innerHTML=link(txt);
 }
 const closeSheet=()=>{$('#backdrop').classList.remove('open');$('#sheet').classList.remove('open')};
 
@@ -181,8 +190,10 @@ $('#file').addEventListener('change',async e=>{
   catch(err){console.error(err);toast('แนบหลักฐานไม่สำเร็จ ลองใหม่อีกครั้ง')}
 });
 document.addEventListener('click',e=>{
-  const t=e.target.closest('button');if(!t)return;const d=t.dataset;
+  const t=e.target.closest('button');if(!t){const c=e.target.closest('[data-card]');if(c)showKey(c.dataset.card);return}const d=t.dataset;
   if(d.act==='login')login();
+  else if(d.act==='emlogin'){const [a,b]=cred();signInWithEmailAndPassword(auth,a,b).catch(gerr)}
+  else if(d.act==='emnew'){const [a,b]=cred();createUserWithEmailAndPassword(auth,a,b).catch(gerr)}
   else if(d.act==='logout'){signOut(auth).then(()=>location.reload())}
   else if(d.claim)claim(d.claim);
   else if(d.toggle)toggle(d.toggle);
