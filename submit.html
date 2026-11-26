@@ -11,7 +11,7 @@
 body{font:16px/1.5 'IBM Plex Sans Thai','Sarabun',-apple-system,sans-serif;background:var(--bg);color:var(--ink);-webkit-user-select:none;user-select:none;overscroll-behavior-y:none}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 [hidden]{display:none!important}
-.app{max-width:720px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px calc(env(safe-area-inset-bottom,0px) + 40px)}
+.app{max-width:720px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px calc(env(safe-area-inset-bottom,0px) + 100px)}
 .top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 2px 16px}
 h1{font-size:26px;font-weight:700}.who{font-size:14px;color:var(--mu)}
 .link{color:var(--ac);font-weight:600;padding:8px 4px}
@@ -45,8 +45,10 @@ h1{font-size:26px;font-weight:700}.who{font-size:14px;color:var(--mu)}
 .sheet h2{font-size:21px;margin-bottom:12px}
 #keyBody{white-space:pre-wrap;word-break:break-word;line-height:1.7;-webkit-user-select:text;user-select:text;margin-bottom:16px}
 #keyBody a{color:var(--ac)}
-.toast{position:fixed;left:50%;transform:translate(-50%,20px);opacity:0;pointer-events:none;bottom:calc(env(safe-area-inset-bottom,0px) + 30px);background:var(--ink);color:#fff;padding:12px 18px;border-radius:999px;font-size:15px;z-index:110;transition:all .25s;max-width:90%;text-align:center}
+.toast{position:fixed;left:50%;transform:translate(-50%,20px);opacity:0;pointer-events:none;bottom:calc(env(safe-area-inset-bottom,0px) + 90px);background:var(--ink);color:#fff;padding:12px 18px;border-radius:999px;font-size:15px;z-index:110;transition:all .25s;max-width:90%;text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(255,255,255,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--ln);padding-bottom:env(safe-area-inset-bottom,0px)}.tabbar div{max-width:720px;margin:0 auto;display:flex;height:64px}.tab{flex:1;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:500;color:var(--mu)}.tab.active{color:var(--ac)}.btn.dis{background:var(--bg);color:var(--mu)}
+.alert{background:var(--soons);color:#6B4A0B;border:1px solid #F0DDAE;border-radius:16px;padding:12px 16px;margin-bottom:12px}.alert.late{background:var(--lates);color:#9B1C20;border-color:#F5C2C4}.alert b{display:block}.alert span{font-size:14px}
 </style></head>
 <body>
 <div id="gate"><p>กำลังโหลด…</p></div>
@@ -56,6 +58,8 @@ h1{font-size:26px;font-weight:700}.who{font-size:14px;color:var(--mu)}
 </div>
 <div class="backdrop" id="backdrop"></div>
 <div class="sheet" id="sheet"><div class="sin"><h2>เฉลย</h2><div id="keyBody"></div><button class="btn ghost block" data-close>ปิด</button></div></div>
+<nav class="tabbar" id="tabbar" hidden><div><button class="tab active" data-tab="tasks">งาน</button><button class="tab" data-tab="keys">เฉลยงาน</button></div></nav>
+<input type="file" id="file" accept="image/*" hidden>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -77,7 +81,7 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const NS='ไม่ระบุวิชา';
 const app=initializeApp(cfg),db=getDatabase(app),auth=getAuth(app);
-const S={students:{},as:{},mine:{},sid:null,subj:''};
+const S={students:{},as:{},mine:{},ev:{},sid:null,subj:'',tab:'tasks'};
 let uid=null,ready=false,seen={},tt;
 
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2600)}
@@ -97,7 +101,7 @@ function startTasks(){
   if(startTasks.on)return;startTasks.on=true;
   onValue(ref(db,'assignments'),s=>{
     S.as=s.val()||{};
-    for(const aid in S.as)if(!seen[aid]){seen[aid]=1;onValue(ref(db,`submissions/${aid}/${S.sid}`),x=>{S.mine[aid]=x.val()===true;render()})}
+    for(const aid in S.as)if(!seen[aid]){seen[aid]=1;onValue(ref(db,`submissions/${aid}/${S.sid}`),x=>{S.mine[aid]=x.val()===true;render()});onValue(ref(db,`evidence/${aid}/${S.sid}/at`),x=>{S.ev[aid]=x.val()!=null;render()})}
     render();
   },e=>toast('อ่านข้อมูลไม่ได้'));
 }
@@ -115,6 +119,8 @@ function dueInfo(due){
 
 function render(){
   if(!uid)return;
+  $('#tabbar').hidden=!S.sid;
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===S.tab));
   if(!S.sid){
     const free=Object.entries(S.students).filter(([,v])=>!v.uid).sort((a,b)=>(a[1].order||0)-(b[1].order||0));
     $('#who').textContent='เลือกชื่อของคุณ';
@@ -132,12 +138,18 @@ function render(){
     const n=all.filter(a=>!a.done&&(!s||(a.subject||NS)===s)).length;
     return `<button class="chip ${S.subj===s?'active':''}" data-subj="${esc(s)}">${s?esc(s):'ทั้งหมด'}${n?' · '+n:''}</button>`}).join('')+'</div>':'';
   const list=S.subj?all.filter(a=>(a.subject||NS)===S.subj):all;
-  $('#main').innerHTML=chips+(list.length?'<div class="list">'+list.map(a=>{
-    const di=dueInfo(a.due);
-    return `<div class="card ${a.done?'done':''}"><div class="th"><div><div class="subject"><i style="background:hsl(${hue(a.subject)} 62% 52%)"></i>${esc(a.subject||NS)}</div><h3>${esc(a.title)}</h3></div>
-      <div class="due ${a.done?'':di.cls}"><b>${esc(di.label)}</b>${di.rel&&!a.done?`<span>${esc(di.rel)}</span>`:''}</div></div>
-      <div class="acts"><button class="btn ${a.done?'ok':'primary'}" data-toggle="${esc(a.id)}">${a.done?'✓ ส่งแล้ว (กดยกเลิก)':'กดเมื่อส่งงานแล้ว'}</button>
-      ${a.done?`<button class="btn ghost" data-key="${esc(a.id)}">ดูเฉลย</button>`:''}</div></div>`}).join('')+'</div>'
+  const keysTab=S.tab==='keys';
+  const late=all.filter(a=>!a.done&&dueInfo(a.due).cls==='late').length,soon=all.filter(a=>!a.done&&dueInfo(a.due).cls==='soon').length,todo=all.filter(a=>!a.done).length;
+  document.querySelector('[data-tab=tasks]').textContent='งาน'+(todo?` (${todo})`:'');
+  const banner=!keysTab&&(late||soon)?`<div class="alert ${late?'late':''}"><b>${late?`⚠️ เลยกำหนด ${late} งาน`:''}${late&&soon?' · ':''}${soon?`⏰ ใกล้ส่ง ${soon} งาน`:''}</b><span>รีบแนบหลักฐานแล้วกดส่งงาน</span></div>`:'';
+  $('#main').innerHTML=banner+chips+(list.length?'<div class="list">'+list.map(a=>{
+    const di=dueInfo(a.due),id=esc(a.id),ev=S.ev[a.id];
+    const head=`<div class="th"><div><div class="subject"><i style="background:hsl(${hue(a.subject)} 62% 52%)"></i>${esc(a.subject||NS)}</div><h3>${esc(a.title)}</h3></div>`;
+    if(keysTab)return `<div class="card">${head}</div><div class="acts">${a.done?`<button class="btn ok" data-key="${id}">ดูเฉลย</button>`:'<button class="btn dis" data-lock>🔒 ส่งงานก่อนจึงจะดูเฉลยได้</button>'}</div></div>`;
+    return `<div class="card ${a.done?'done':''}">${head}<div class="due ${a.done?'':di.cls}"><b>${esc(di.label)}</b>${di.rel&&!a.done?`<span>${esc(di.rel)}</span>`:''}</div></div>
+      <div class="acts">${a.done?`<button class="btn ok" data-toggle="${id}">✓ ส่งแล้ว (กดยกเลิก)</button><button class="btn ghost" data-key="${id}">ดูเฉลย</button>`
+      :`<button class="btn ghost" data-evid="${id}">📷 ${ev?'เปลี่ยนรูปหลักฐาน':'เพิ่มหลักฐาน'}</button><button class="btn ${ev?'primary':'dis'}" data-toggle="${id}">ส่งงาน</button>`}</div>
+      ${!a.done&&ev?'<p class="hint" style="margin:10px 0 0">📎 แนบหลักฐานแล้ว</p>':''}</div>`}).join('')+'</div>'
     :'<div class="empty"><h3>ยังไม่มีงาน</h3></div>');
 }
 
@@ -148,7 +160,7 @@ async function claim(id){
   catch(e){console.error(e);toast('ชื่อนี้ถูกเลือกไปแล้ว หรือบัญชีนี้ผูกชื่ออื่นอยู่')}
 }
 async function toggle(aid){
-  const on=!S.mine[aid];S.mine[aid]=on;render();
+  if(!S.mine[aid]&&!S.ev[aid])return toast('เพิ่มหลักฐานก่อนส่งงาน');const on=!S.mine[aid];S.mine[aid]=on;render();
   try{await set(ref(db,`submissions/${aid}/${S.sid}`),on?true:null)}
   catch(e){console.error(e);S.mine[aid]=!on;render();toast('บันทึกไม่สำเร็จ')}
 }
@@ -160,6 +172,14 @@ async function showKey(aid){
 }
 const closeSheet=()=>{$('#backdrop').classList.remove('open');$('#sheet').classList.remove('open')};
 
+let pend=null;
+function shrink(f){return new Promise((ok,no)=>{const im=new Image();im.onload=()=>{const r=Math.min(1,1000/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*r);c.height=Math.round(im.height*r);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(im.src);ok(c.toDataURL('image/jpeg',.7))};im.onerror=no;im.src=URL.createObjectURL(f)})}
+$('#file').addEventListener('change',async e=>{
+  const f=e.target.files[0];e.target.value='';if(!f||!pend)return;
+  const aid=pend;toast('กำลังอัปโหลดรูป…');
+  try{await set(ref(db,`evidence/${aid}/${S.sid}`),{img:await shrink(f),at:Date.now()});toast('แนบหลักฐานแล้ว กดส่งงานได้เลย')}
+  catch(err){console.error(err);toast('แนบหลักฐานไม่สำเร็จ ลองใหม่อีกครั้ง')}
+});
 document.addEventListener('click',e=>{
   const t=e.target.closest('button');if(!t)return;const d=t.dataset;
   if(d.act==='login')login();
@@ -167,6 +187,9 @@ document.addEventListener('click',e=>{
   else if(d.claim)claim(d.claim);
   else if(d.toggle)toggle(d.toggle);
   else if(d.key)showKey(d.key);
+  else if(d.tab){S.tab=d.tab;render()}
+  else if(d.evid){pend=d.evid;$('#file').click()}
+  else if('lock' in d)toast('ส่งงานก่อนจึงจะดูเฉลยได้')
   else if('subj' in d){S.subj=d.subj;render()}
   else if('close' in d)closeSheet();
 });

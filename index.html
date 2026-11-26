@@ -67,7 +67,7 @@ textarea.field{min-height:120px;resize:none;line-height:1.6}
 .seg button{flex:1;min-height:44px;border-radius:11px;font-weight:600;font-size:15px;color:var(--mu)}
 .seg button.active{background:var(--sf);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .cr{width:100%;display:flex;align-items:center;gap:14px;text-align:left;min-height:62px;padding:0 16px;border-bottom:1px solid var(--ln);background:var(--sf)}
-.cr:last-child{border:0}.cr .name{flex:1;font-size:17px;padding:12px 0}.cr.on .name{color:var(--mu)}
+.cr:last-child{border:0}.crw{display:flex;align-items:center;background:var(--sf);border-bottom:1px solid var(--ln)}.crw:last-child{border:0}.crw .cr{flex:1;width:auto;border:0}.cr .name{flex:1;font-size:17px;padding:12px 0}.cr.on .name{color:var(--mu)}
 .box{width:34px;height:34px;border-radius:50%;border:2px solid #C5CBD4;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700}
 .cr.on .box{background:var(--ok);border-color:var(--ok)}
 .state{font-size:13px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--lates);color:var(--late)}
@@ -102,11 +102,13 @@ textarea.field{min-height:120px;resize:none;line-height:1.6}
     <div class="sub"><span id="peopleCount"></span><button class="link" id="bulkOpen">เพิ่มหลายชื่อพร้อมกัน</button></div>
     <div id="peopleList"></div>
   </section>
+  <section class="view" id="viewKeys"><div class="list" id="keyList"></div></section>
 </div>
 <button class="fab" id="fabAdd">＋ เพิ่มงาน</button>
 <nav class="tabbar"><div>
   <button class="tab active" data-tab="tasks">งาน</button>
   <button class="tab" data-tab="people">รายชื่อ</button>
+  <button class="tab" data-tab="keys">เฉลยงาน</button>
 </div></nav>
 <div class="detail" id="detail"><div class="din" id="detailBody"></div></div>
 <div class="backdrop" id="backdrop"></div>
@@ -122,6 +124,7 @@ textarea.field{min-height:120px;resize:none;line-height:1.6}
   <textarea class="field" id="bulkText" placeholder="หนึ่งบรรทัดต่อหนึ่งคน"></textarea>
   <div class="acts"><button class="btn ghost" data-close>ยกเลิก</button><button class="btn primary" id="bulkSave">เพิ่มรายชื่อ</button></div>
 </div></div>
+<div class="sheet" id="sheetEv"><div class="sin"><h2 id="evTitle">หลักฐาน</h2><div id="evBody"></div><button class="btn ghost block" data-close>ปิด</button></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -187,7 +190,7 @@ function sorted(){
 }
 
 /* ---------- Render ---------- */
-function render(){renderTasks();renderPeople();renderDetail();
+function render(){renderTasks();renderPeople();renderKeys();renderDetail();
   $('#subjectList').innerHTML=[...new Set(Object.values(S.assignments).map(a=>a.subject).filter(Boolean))].map(s=>`<option value="${esc(s)}">`).join('')}
 
 function renderTasks(){
@@ -207,6 +210,10 @@ function renderTasks(){
       <p class="pg">${a.total?`ส่งแล้ว <b>${a.done}/${a.total}</b> คน`:'ยังไม่มีรายชื่อ'}</p></button>`}).join('');
 }
 
+function renderKeys(){
+  const l=sorted(),el=$('#keyList');
+  el.innerHTML=l.length?l.map(a=>`<button class="task" data-open="${esc(a.id)}"><div class="subject"><i style="background:hsl(${hue(a.subject)} 62% 52%)"></i>${esc(a.subject||NS)}</div><h3>${esc(a.title)}</h3><p class="pg">${S.keys[a.id]?.text?'มีเฉลยแล้ว · แตะเพื่อแก้':'ยังไม่มีเฉลย · แตะเพื่อเพิ่ม'}</p></button>`).join(''):'<div class="empty"><h3>ยังไม่มีงาน</h3></div>';
+}
 function renderPeople(){
   const list=studentList();
   $('#peopleCount').textContent=list.length?`ทั้งหมด ${list.length} คน · ผูกบัญชีแล้ว ${list.filter(s=>s.uid).length}`:'';
@@ -224,13 +231,14 @@ function renderDetail(){
   const st=studentList(),total=st.length,subs=S.subs[S.openId]||{},done=st.filter(s=>subs[s.id]).length,pct=total?Math.round(done/total*100):0;
   const di=dueInfo(a.due,total>0&&done===total),shown=S.pending?st.filter(s=>!subs[s.id]):st;
   const rows=!total?'<div class="empty"><h3>ยังไม่มีรายชื่อ</h3></div>':!shown.length?'<div class="empty"><h3>ส่งครบทุกคนแล้ว</h3></div>'
-    :'<div class="rows">'+shown.map(s=>`<button class="cr ${subs[s.id]?'on':''}" data-toggle="${esc(s.id)}"><span class="box">${subs[s.id]?'✓':''}</span><span class="name">${esc(s.name)}</span><span class="state">${subs[s.id]?'ส่งแล้ว':'ยังไม่ส่ง'}</span></button>`).join('')+'</div>';
+    :'<div class="rows">'+shown.map(s=>`<div class="crw"><button class="cr ${subs[s.id]?'on':''}" data-toggle="${esc(s.id)}"><span class="box">${subs[s.id]?'✓':''}</span><span class="name">${esc(s.name)}</span><span class="state">${subs[s.id]?'ส่งแล้ว':'ยังไม่ส่ง'}</span></button>${subs[s.id]?`<button class="ib" data-evid="${esc(s.id)}" aria-label="หลักฐาน">📷</button>`:''}</div>`).join('')+'</div>';
   const top=box.scrollTop;
   $('#detailBody').innerHTML=`<button class="back" data-back>‹ งานทั้งหมด</button>
     <div class="subject"><i style="background:hsl(${hue(a.subject)} 62% 52%)"></i>${esc(a.subject||NS)}</div><h2>${esc(a.title)}</h2>
     <div class="summary"><div class="big">ส่งแล้ว ${done}/${total}<small>คน</small></div>
     <div class="bar ${total&&done===total?'full':''}"><div style="width:${pct}%"></div></div>
     <div class="meta"><span>กำหนดส่ง ${esc(di.label)}</span><span>${esc(di.rel)}</span></div></div>
+    ${total-done?'<button class="btn ghost block" data-copy style="margin-bottom:12px">📋 คัดลอกข้อความทวงคนที่ยังไม่ส่ง</button>':''}
     <div class="seg"><button data-filter="all" class="${S.pending?'':'active'}">ทั้งหมด (${total})</button><button data-filter="pending" class="${S.pending?'active':''}">ยังไม่ส่ง (${total-done})</button></div>
     ${rows}
     <div class="key"><b>เฉลยงาน</b><textarea class="field" id="keyText" placeholder="พิมพ์เฉลย หรือวางลิงก์ไฟล์เฉลย">${esc(S.keys[S.openId]?.text||'')}</textarea>
@@ -254,7 +262,7 @@ async function addStudents(names){
 async function deleteStudent(id){
   const s=S.students[id];if(!s||!confirm(`ลบ “${s.name}” ออกจากรายชื่อ?\nสถานะการส่งงานของคนนี้จะถูกลบด้วย`))return;
   const u={[`students/${id}`]:null};if(s.uid)u[`users/${s.uid}`]=null;
-  Object.keys(S.assignments).forEach(a=>{u[`submissions/${a}/${id}`]=null});
+  Object.keys(S.assignments).forEach(a=>{u[`submissions/${a}/${id}`]=null;u[`evidence/${a}/${id}`]=null});
   await safe(()=>update(ref(db),u));
 }
 async function release(id){
@@ -264,7 +272,7 @@ async function release(id){
 async function deleteTask(){
   const a=S.assignments[S.openId];if(!a||!confirm(`ลบงาน “${a.title}”?\nข้อมูลการส่งงานและเฉลยของงานนี้จะหายไป`))return;
   const id=S.openId;S.openId=null;
-  await safe(()=>update(ref(db),{[`assignments/${id}`]:null,[`submissions/${id}`]:null,[`answerKeys/${id}`]:null}));
+  await safe(()=>update(ref(db),{[`assignments/${id}`]:null,[`submissions/${id}`]:null,[`answerKeys/${id}`]:null,[`evidence/${id}`]:null}));
 }
 async function saveKey(){
   const v=$('#keyText').value.trim();
@@ -277,6 +285,20 @@ async function saveTask(){
   await safe(()=>set(ref(db,'assignments/'+push(ref(db,'assignments')).key),{subject,title,due,createdAt:Date.now()}));
   closeSheets();$('#fTitle').value='';
 }
+function copyChase(){
+  const a=S.assignments[S.openId];if(!a)return;
+  const subs=S.subs[S.openId]||{},miss=studentList().filter(x=>!subs[x.id]),di=dueInfo(a.due,false);
+  const txt=`📢 ทวงงาน ${a.subject||''}: ${a.title}\nกำหนดส่ง ${di.label}${di.rel?' ('+di.rel+')':''}\nยังไม่ส่ง ${miss.length} คน:\n`+miss.map((x,i)=>`${i+1}. ${x.name}`).join('\n')+'\nรีบส่งด้วยนะ 🙏';
+  const ok=()=>toast('คัดลอกแล้ว นำไปวางในกลุ่มไลน์ได้เลย');
+  (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(ok).catch(()=>{const t=document.createElement('textarea');t.value=txt;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();ok()});
+}
+async function showEv(sid){
+  $('#evTitle').textContent='หลักฐาน · '+(S.students[sid]?.name||'');
+  $('#evBody').innerHTML='<p class="hint">กำลังโหลด…</p>';openSheet('#sheetEv');
+  try{const v=(await get(ref(db,`evidence/${S.openId}/${sid}`))).val();
+    $('#evBody').innerHTML=v&&v.img?`<img src="${v.img}" style="width:100%;border-radius:14px;margin-bottom:16px">`:'<p class="hint" style="margin-bottom:16px">ไม่มีหลักฐานแนบ (ครูติ๊กให้เอง)</p>'}
+  catch(e){$('#evBody').innerHTML='<p class="hint">อ่านหลักฐานไม่ได้</p>'}
+}
 const openSheet=id=>{$('#backdrop').classList.add('open');$(id).classList.add('open')};
 function closeSheets(){$('#backdrop').classList.remove('open');document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('open'));document.activeElement?.blur()}
 const ymd=d=>{const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`};
@@ -287,7 +309,7 @@ document.addEventListener('click',e=>{
   if(d.act==='login')login();
   else if(d.act==='logout')signOut(auth);
   else if(d.tab){S.tab=d.tab;document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b===t));
-    $('#viewTasks').classList.toggle('active',S.tab==='tasks');$('#viewPeople').classList.toggle('active',S.tab==='people');
+    $('#viewTasks').classList.toggle('active',S.tab==='tasks');$('#viewPeople').classList.toggle('active',S.tab==='people');$('#viewKeys').classList.toggle('active',S.tab==='keys');
     $('#fabAdd').style.display=S.tab==='tasks'?'flex':'none';scrollTo(0,0)}
   else if('subj' in d){S.subj=d.subj;renderTasks()}
   else if(d.open){S.openId=d.open;S.pending=false;render()}
@@ -297,6 +319,8 @@ document.addEventListener('click',e=>{
   else if('delTask' in d)deleteTask();
   else if('savekey' in d)saveKey();
   else if(d.delStudent)deleteStudent(d.delStudent);
+  else if('copy' in d)copyChase();
+  else if(d.evid)showEv(d.evid);
   else if(d.release)release(d.release);
   else if(t.id==='fabAdd'){$('#fDue').value=ymd(new Date(Date.now()+7*864e5));openSheet('#sheetTask')}
   else if(t.id==='taskSave')saveTask();
