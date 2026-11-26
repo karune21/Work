@@ -2,7 +2,7 @@
 <html lang="th"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="ส่งงาน"><meta name="theme-color" content="#F5F6F8">
+<meta name="apple-mobile-web-app-title" content="ส่งงาน"><meta name="theme-color" content="#F5F6F8"><link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icon.png">
 <title>ส่งงาน</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -52,11 +52,11 @@ h1{font-size:26px;font-weight:700}.who{font-size:14px;color:var(--mu)}
 .kimgs img{width:100%;border-radius:14px;margin:8px 0;display:block}.news{background:#E8EEFF;color:#1B2E8F;border:1px solid #C5D2FF;border-radius:16px;padding:12px 16px;margin-bottom:12px}.news b{display:block}.news button{margin-top:6px;color:var(--ac);font-weight:600}
 .pop{position:fixed;inset:0;z-index:120;background:rgba(24,32,43,.45);display:none;align-items:center;justify-content:center;padding:24px}.pop.open{display:flex}.pop .box{background:var(--sf);border-radius:24px;padding:24px;max-width:420px;width:100%;max-height:80%;overflow-y:auto}.pop h2{font-size:21px;margin-bottom:10px}.pop p{color:var(--mu);margin-bottom:6px;word-break:break-word}.pop ul{margin:8px 0 16px 20px}.pop li{margin-bottom:4px;word-break:break-word}
 .field{width:100%;min-height:52px;padding:12px 16px;border-radius:14px;border:1.5px solid var(--ln);background:var(--sf);font:inherit;color:inherit;-webkit-user-select:text;user-select:text}
-</style></head><link rel="apple-touch-icon" href="icon.png">
+</style></head>
 <body>
 <div id="gate"><p>กำลังโหลด…</p></div>
 <div class="app">
-  <header class="top"><div><h1>ส่งงาน</h1><div class="who" id="who"></div></div><div style="display:flex;gap:4px;align-items:center"><button class="link" data-act="snd" id="sndBtn">🔕 เสียง</button><button class="link" data-act="logout">ออกจากระบบ</button></div></header>
+  <header class="top"><div><h1>ส่งงาน</h1><div class="who" id="who"></div></div><div style="display:flex;gap:4px;align-items:center"><button class="link" data-act="push" id="pushBtn">📲 แจ้งเตือน</button><button class="link" data-act="snd" id="sndBtn">🔕 เสียง</button><button class="link" data-act="logout">ออกจากระบบ</button></div></header>
   <div id="main"></div>
 </div>
 <div class="backdrop" id="backdrop"></div>
@@ -72,6 +72,7 @@ h1{font-size:26px;font-weight:700}.who{font-size:14px;color:var(--mu)}
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {getDatabase,ref,onValue,set,update,get} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
+import {getMessaging,getToken,onMessage,isSupported} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-messaging.js";
 import {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,signInWithEmailAndPassword,createUserWithEmailAndPassword,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 
 const cfg={
@@ -79,6 +80,7 @@ const cfg={
   authDomain:"harune-eb66f.firebaseapp.com",
   databaseURL:"https://harune-eb66f-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId:"harune-eb66f",
+  messagingSenderId:"555612322072",
   appId:"1:555612322072:web:b13dbf38f139a38c89066d"
 };
 const $=s=>document.querySelector(s);
@@ -101,7 +103,7 @@ onAuthStateChanged(auth,async u=>{
   uid=u.uid;$('#gate').hidden=true;
   try{S.sid=(await get(ref(db,'users/'+uid))).val()}catch(e){S.sid=null}
   if(!ready){ready=true;onValue(ref(db,'students'),s=>{S.students=s.val()||{};render()},e=>toast('อ่านข้อมูลไม่ได้'))}
-  if(S.sid)startTasks();
+  if(S.sid){startTasks();enablePush(true)}
   render();
 });
 
@@ -214,6 +216,28 @@ setInterval(()=>{
 },15000);
 sndUI();
 
+const VAPID='วาง_VAPID_KEY_ตรงนี้';
+let onMsg=false;
+async function enablePush(silent){
+  try{
+    const ios=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+    const standalone=navigator.standalone||matchMedia('(display-mode: standalone)').matches;
+    if(ios&&!standalone){if(!silent)popup('ต้องเพิ่มลงหน้าจอโฮมก่อน',['แตะปุ่มแชร์ใน Safari','เลือก “เพิ่มลงในหน้าจอโฮม”','เปิดจากไอคอนบนหน้าจอโฮม แล้วกด 📲 แจ้งเตือน อีกครั้ง']);return}
+    if(!S.sid)return;
+    if(!(await isSupported())){if(!silent)toast('เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือน');return}
+    let p=Notification.permission;
+    if(p==='default'&&!silent)p=await Notification.requestPermission();
+    if(p!=='granted'){if(!silent)toast('ยังไม่ได้อนุญาตการแจ้งเตือน (ตั้งค่า > แจ้งเตือน)');return}
+    const reg=await navigator.serviceWorker.register('firebase-messaging-sw.js');
+    const msg=getMessaging(app);
+    const token=await getToken(msg,{vapidKey:VAPID,serviceWorkerRegistration:reg});
+    if(!token){if(!silent)toast('ขอ token ไม่สำเร็จ');return}
+    await set(ref(db,'fcmTokens/'+uid),{token,sid:S.sid,at:Date.now()});
+    if(!onMsg){onMsg=true;onMessage(msg,pl=>{const n=pl.notification||{};ding(2);popup(n.title||'แจ้งเตือน',n.body?[n.body]:[])})}
+    if(!silent)toast('เปิดแจ้งเตือนแล้ว ✓');
+  }catch(e){console.error(e);if(!silent)toast('เปิดแจ้งเตือนไม่สำเร็จ: '+(e.code||e.message))}
+}
+
 let pend=null;
 function shrink(f){return new Promise((ok,no)=>{const im=new Image();im.onload=()=>{const r=Math.min(1,1000/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*r);c.height=Math.round(im.height*r);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(im.src);ok(c.toDataURL('image/jpeg',.7))};im.onerror=no;im.src=URL.createObjectURL(f)})}
 $('#file').addEventListener('change',async e=>{
@@ -227,6 +251,7 @@ document.addEventListener('click',e=>{
   if(d.act==='login')login();
   else if(d.act==='emlogin'){const [a,b]=cred();signInWithEmailAndPassword(auth,a,b).catch(gerr)}
   else if(d.act==='emnew'){const [a,b]=cred();createUserWithEmailAndPassword(auth,a,b).catch(gerr)}
+  else if(d.act==='push')enablePush(false);
   else if(d.act==='snd'){soundOn=!soundOn;localStorage.setItem('snd',soundOn?'1':'0');sndUI();if(soundOn){unlock();ding(1);toast('เปิดเสียงเตือนทุกชั่วโมง (08:00–20:00)');try{if('Notification' in window&&Notification.permission==='default')Notification.requestPermission()}catch(e){}}else toast('ปิดเสียงเตือนแล้ว')}
   else if(d.act==='nonews'){S.news=[];render()}
   else if(d.act==='logout'){signOut(auth).then(()=>location.reload())}

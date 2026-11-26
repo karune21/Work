@@ -1,0 +1,12 @@
+{
+  "name": "ส่งงาน",
+  "short_name": "ส่งงาน",
+  "start_url": "./submit.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F5F6F8",
+  "theme_color": "#F5F6F8",
+  "icons": [
+    {"src": "icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any"}
+  ]
+}
