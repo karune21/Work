@@ -1,731 +1,311 @@
 <!DOCTYPE html>
-<html lang="th">
-<head>
-<meta charset="UTF-8">
-<!-- ป้องกันการซูมบน iPad / iOS -->
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="format-detection" content="telephone=no">
-
-<!-- รองรับ Add to Home Screen แบบเต็มจอ -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="ตรวจงานค้าง">
-<meta name="theme-color" content="#F5F6F8">
-<link rel="apple-touch-icon" id="touchIcon" href="">
-
+<html lang="th"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ตรวจงานค้าง"><meta name="theme-color" content="#F5F6F8">
 <title>ระบบตรวจงานค้าง</title>
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
-
 <style>
-:root{
-  --bg:#F5F6F8;
-  --surface:#FFFFFF;
-  --ink:#18202B;
-  --muted:#6B7685;
-  --line:#E3E6EB;
-  --accent:#2D4EF5;
-  --accent-soft:#E9EDFF;
-  --ok:#17A06B;
-  --ok-soft:#E3F6EE;
-  --late:#E5484D;
-  --late-soft:#FDECEC;
-  --soon:#B7791F;
-  --soon-soft:#FFF4DC;
-  --r-lg:20px;
-  --r-md:14px;
-  --tabbar:64px;
-}
-*{box-sizing:border-box;margin:0;padding:0}
-
+:root{--bg:#F5F6F8;--sf:#fff;--ink:#18202B;--mu:#6B7685;--ln:#E3E6EB;--ac:#2D4EF5;--acs:#E9EDFF;--ok:#17A06B;--oks:#E3F6EE;--late:#E5484D;--lates:#FDECEC;--soon:#B7791F;--soons:#FFF4DC;--tb:64px}
+*{box-sizing:border-box;margin:0;padding:0;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
-html{
-  -webkit-text-size-adjust:100%;
-  touch-action:manipulation;
-}
-body{
-  font-family:'IBM Plex Sans Thai','Sarabun','Thonburi',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-  background:var(--bg);
-  color:var(--ink);
-  line-height:1.5;
-  font-size:16px;
-  /* กันซูม / กันเลือกข้อความ / กันเมนูค้างนิ้ว */
-  touch-action:manipulation;
-  -webkit-user-select:none;
-  user-select:none;
-  -webkit-touch-callout:none;
-  -webkit-tap-highlight-color:transparent;
-  overscroll-behavior-y:none;
-}
-*{touch-action:manipulation}
-input,textarea{
-  -webkit-user-select:text;
-  user-select:text;
-  font:inherit;
-  font-size:16px; /* ≥16px กัน iOS ซูมเองตอนโฟกัสช่องกรอก */
-  color:var(--ink);
-}
+body{font:16px/1.5 'IBM Plex Sans Thai','Sarabun',-apple-system,sans-serif;background:var(--bg);color:var(--ink);-webkit-user-select:none;user-select:none;overscroll-behavior-y:none}
+input,textarea{font:inherit;color:inherit;-webkit-user-select:text;user-select:text}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
-button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--accent-soft);outline-offset:1px}
-
-/* ---------- โครงหน้า ---------- */
-.app{
-  max-width:720px;margin:0 auto;
-  padding:calc(env(safe-area-inset-top,0px) + 12px) 16px calc(var(--tabbar) + env(safe-area-inset-bottom,0px) + 96px);
-  min-height:100%;
-}
+[hidden]{display:none!important}
+.app{max-width:720px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px calc(var(--tb) + env(safe-area-inset-bottom,0px) + 96px)}
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 2px 16px}
-.topbar h1{font-size:26px;font-weight:700;letter-spacing:-.01em}
-.sync{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 12px;white-space:nowrap}
-.sync i{width:8px;height:8px;border-radius:50%;background:#B8BFCA;display:block}
-.sync.on i{background:var(--ok);box-shadow:0 0 0 4px var(--ok-soft)}
-
-.view{display:none}
-.view.active{display:block}
-
-/* ---------- การ์ดงาน ---------- */
+h1{font-size:26px;font-weight:700}
+.sync{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--mu);background:var(--sf);border:1px solid var(--ln);border-radius:999px;padding:6px 12px}
+.sync i{width:8px;height:8px;border-radius:50%;background:#B8BFCA}
+.sync.on i{background:var(--ok);box-shadow:0 0 0 4px var(--oks)}
+.view{display:none}.view.active{display:block}
 .list{display:flex;flex-direction:column;gap:12px}
-.task{
-  width:100%;text-align:left;display:block;
-  background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
-  padding:16px 16px 14px;
-}
-.task:active{background:#FAFBFC}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:12px}
+.chip{flex:none;min-height:40px;padding:0 14px;border-radius:999px;background:var(--sf);border:1px solid var(--ln);font-size:15px;font-weight:500;color:var(--mu)}
+.chip.active{background:var(--ac);border-color:var(--ac);color:#fff}
+.task{width:100%;text-align:left;display:block;background:var(--sf);border:1px solid var(--ln);border-radius:20px;padding:16px 16px 14px}
 .task.done{opacity:.62}
-.task-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
-.subject{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);font-weight:500}
-.subject i{width:10px;height:10px;border-radius:3px;display:block;flex:none}
+.th{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.subject{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--mu);font-weight:500}
+.subject i{width:10px;height:10px;border-radius:3px;flex:none}
 .task h3{font-size:18px;font-weight:600;margin-top:4px;line-height:1.35;word-break:break-word}
-.due{text-align:right;flex:none}
-.due b{display:block;font-size:15px;font-weight:600}
-.due span{font-size:13px;font-weight:500;padding:2px 8px;border-radius:999px;display:inline-block;margin-top:3px;background:var(--bg);color:var(--muted)}
-.due.late span{background:var(--late-soft);color:var(--late)}
-.due.soon span{background:var(--soon-soft);color:var(--soon)}
-.due.ok span{background:var(--ok-soft);color:var(--ok)}
-
-.progress{margin-top:14px}
-.bar{height:8px;background:var(--bg);border-radius:999px;overflow:hidden}
-.bar > div{height:100%;background:var(--accent);border-radius:999px;transition:width .3s ease}
-.bar.full > div{background:var(--ok)}
-.progress p{margin-top:8px;font-size:14px;color:var(--muted)}
-.progress p b{color:var(--ink);font-weight:600}
-
-/* ---------- ปุ่มลอย / แท็บ ---------- */
-.fab{
-  position:fixed;right:max(16px,calc((100vw - 720px)/2 + 16px));
-  bottom:calc(var(--tabbar) + env(safe-area-inset-bottom,0px) + 16px);
-  background:var(--accent);color:#fff;font-weight:600;font-size:16px;
-  min-height:56px;padding:0 22px;border-radius:999px;
-  box-shadow:0 8px 24px rgba(45,78,245,.32);
-  display:flex;align-items:center;gap:8px;z-index:20;
-}
-.fab:active{transform:scale(.97)}
-.fab svg{width:20px;height:20px}
-
-.tabbar{
-  position:fixed;left:0;right:0;bottom:0;z-index:30;
-  background:rgba(255,255,255,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-  border-top:1px solid var(--line);
-  padding-bottom:env(safe-area-inset-bottom,0px);
-}
-.tabbar-in{max-width:720px;margin:0 auto;display:flex;height:var(--tabbar)}
-.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:13px;font-weight:500;color:var(--muted)}
-.tab svg{width:24px;height:24px}
-.tab.active{color:var(--accent)}
-
-/* ---------- ปุ่มทั่วไป ---------- */
-.btn{
-  min-height:52px;padding:0 20px;border-radius:var(--r-md);font-weight:600;font-size:16px;
-  display:inline-flex;align-items:center;justify-content:center;gap:8px;
-}
-.btn.primary{background:var(--accent);color:#fff}
-.btn.primary:active{filter:brightness(.92)}
-.btn.ghost{background:var(--bg);color:var(--ink)}
-.btn.danger{background:var(--late-soft);color:var(--late)}
-.btn.block{width:100%}
-
-/* ---------- รายชื่อ ---------- */
-.add-row{display:flex;gap:10px;margin-bottom:14px}
-.add-row input{flex:1;min-width:0}
-.field{
-  width:100%;min-height:52px;padding:12px 16px;border-radius:var(--r-md);
-  border:1.5px solid var(--line);background:var(--surface);
-}
-.field:focus{border-color:var(--accent);outline:none}
-textarea.field{min-height:160px;resize:none;line-height:1.6}
-.sub-actions{display:flex;justify-content:space-between;align-items:center;margin:2px 2px 12px;color:var(--muted);font-size:14px}
-.link{color:var(--accent);font-weight:600;font-size:15px;padding:8px 4px}
-
-.rows{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
-.row{display:flex;align-items:center;gap:12px;min-height:58px;padding:0 8px 0 16px;border-bottom:1px solid var(--line)}
-.row:last-child{border-bottom:0}
-.row .name{flex:1;font-size:17px;word-break:break-word;padding:10px 0}
-.row .idx{width:26px;color:var(--muted);font-size:14px;flex:none}
-.icon-btn{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex:none}
-.icon-btn:active{background:var(--late-soft);color:var(--late)}
-.icon-btn svg{width:22px;height:22px}
-
-/* ---------- หน้ารายละเอียดงาน ---------- */
-.detail{
-  position:fixed;inset:0;z-index:40;background:var(--bg);display:none;
-  overflow-y:auto;-webkit-overflow-scrolling:touch;
-}
+.due{text-align:right;flex:none}.due b{display:block;font-size:15px}
+.due span{font-size:13px;font-weight:500;padding:2px 8px;border-radius:999px;display:inline-block;margin-top:3px;background:var(--bg);color:var(--mu)}
+.due.late span{background:var(--lates);color:var(--late)}.due.soon span{background:var(--soons);color:var(--soon)}.due.ok span{background:var(--oks);color:var(--ok)}
+.bar{height:8px;background:var(--bg);border-radius:999px;overflow:hidden;margin-top:14px}
+.bar div{height:100%;background:var(--ac);border-radius:999px;transition:width .3s}
+.bar.full div{background:var(--ok)}
+.pg{margin-top:8px;font-size:14px;color:var(--mu)}.pg b{color:var(--ink)}
+.fab{position:fixed;right:max(16px,calc((100vw - 720px)/2 + 16px));bottom:calc(var(--tb) + env(safe-area-inset-bottom,0px) + 16px);background:var(--ac);color:#fff;font-weight:600;min-height:56px;padding:0 22px;border-radius:999px;box-shadow:0 8px 24px rgba(45,78,245,.32);display:flex;align-items:center;gap:8px;z-index:20}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(255,255,255,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--ln);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabbar div{max-width:720px;margin:0 auto;display:flex;height:var(--tb)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:14px;font-weight:500;color:var(--mu)}
+.tab.active{color:var(--ac)}
+.btn{min-height:52px;padding:0 20px;border-radius:14px;font-weight:600;display:inline-flex;align-items:center;justify-content:center}
+.btn.primary{background:var(--ac);color:#fff}.btn.ghost{background:var(--bg)}.btn.danger{background:var(--lates);color:var(--late)}.btn.block{width:100%}
+.add-row{display:flex;gap:10px;margin-bottom:14px}.add-row input{flex:1;min-width:0}
+.field{width:100%;min-height:52px;padding:12px 16px;border-radius:14px;border:1.5px solid var(--ln);background:var(--sf)}
+.field:focus{border-color:var(--ac);outline:none}
+textarea.field{min-height:120px;resize:none;line-height:1.6}
+.sub{display:flex;justify-content:space-between;align-items:center;margin:2px 2px 12px;color:var(--mu);font-size:14px}
+.link{color:var(--ac);font-weight:600;padding:8px 4px}
+.rows{background:var(--sf);border:1px solid var(--ln);border-radius:20px;overflow:hidden}
+.row{display:flex;align-items:center;gap:10px;min-height:58px;padding:0 8px 0 16px;border-bottom:1px solid var(--ln)}
+.row:last-child{border:0}.row .name{flex:1;font-size:17px;padding:10px 0;word-break:break-word}.row .idx{width:26px;color:var(--mu);font-size:14px}
+.tag{font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--acs);color:var(--ac)}
+.ib{width:48px;height:48px;border-radius:12px;font-size:20px;color:var(--mu)}
+.detail{position:fixed;inset:0;z-index:40;background:var(--bg);display:none;overflow-y:auto}
 .detail.open{display:block}
-.detail-in{
-  max-width:720px;margin:0 auto;
-  padding:calc(env(safe-area-inset-top,0px) + 8px) 16px calc(env(safe-area-inset-bottom,0px) + 40px);
-}
-.back{display:inline-flex;align-items:center;gap:4px;min-height:48px;padding:0 12px 0 0;color:var(--accent);font-weight:600;font-size:16px}
-.back svg{width:22px;height:22px}
-.d-title{margin:4px 0 2px}
-.d-title h2{font-size:24px;font-weight:700;line-height:1.3;margin-top:4px;word-break:break-word}
-.summary{
-  background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
-  padding:18px;margin:16px 0 14px;
-}
-.summary .big{font-size:30px;font-weight:700;letter-spacing:-.01em}
-.summary .big small{font-size:16px;font-weight:500;color:var(--muted);margin-left:4px}
-.summary .bar{margin-top:12px;height:10px}
-.summary .meta{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:14px;color:var(--muted)}
-
-.seg{display:flex;background:#E8EAEE;border-radius:var(--r-md);padding:4px;margin-bottom:12px}
-.seg button{flex:1;min-height:44px;border-radius:11px;font-weight:600;font-size:15px;color:var(--muted)}
-.seg button.active{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
-
-.check-row{
-  width:100%;display:flex;align-items:center;gap:14px;text-align:left;
-  min-height:62px;padding:0 16px;border-bottom:1px solid var(--line);background:var(--surface);
-}
-.check-row:last-child{border-bottom:0}
-.check-row:active{background:#FAFBFC}
-.check-row .name{flex:1;font-size:17px;padding:12px 0;word-break:break-word}
-.check-row.on .name{color:var(--muted)}
-.box{
-  width:34px;height:34px;border-radius:50%;border:2px solid #C5CBD4;flex:none;
-  display:flex;align-items:center;justify-content:center;color:#fff;transition:all .15s ease;
-}
-.box svg{width:20px;height:20px;opacity:0;transform:scale(.6);transition:all .15s ease}
-.check-row.on .box{background:var(--ok);border-color:var(--ok)}
-.check-row.on .box svg{opacity:1;transform:scale(1)}
-.state{font-size:13px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--late-soft);color:var(--late);flex:none}
-.check-row.on .state{background:var(--ok-soft);color:var(--ok)}
-
-.delete-zone{margin-top:28px}
-
-/* ---------- แผ่นกรอกข้อมูล ---------- */
-.backdrop{position:fixed;inset:0;background:rgba(24,32,43,.38);z-index:60;display:none}
-.backdrop.open{display:block}
-.sheet{
-  position:fixed;left:0;right:0;bottom:0;z-index:70;background:var(--surface);
-  border-radius:24px 24px 0 0;max-height:92%;overflow-y:auto;
-  transform:translateY(105%);transition:transform .25s ease;visibility:hidden;
-}
+.din{max-width:720px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 8px) 16px calc(env(safe-area-inset-bottom,0px) + 40px)}
+.back{min-height:48px;color:var(--ac);font-weight:600}
+.din h2{font-size:24px;font-weight:700;line-height:1.3;margin-top:4px;word-break:break-word}
+.summary{background:var(--sf);border:1px solid var(--ln);border-radius:20px;padding:18px;margin:16px 0 14px}
+.big{font-size:30px;font-weight:700}.big small{font-size:16px;font-weight:500;color:var(--mu);margin-left:4px}
+.meta{display:flex;justify-content:space-between;margin-top:10px;font-size:14px;color:var(--mu)}
+.seg{display:flex;background:#E8EAEE;border-radius:14px;padding:4px;margin-bottom:12px}
+.seg button{flex:1;min-height:44px;border-radius:11px;font-weight:600;font-size:15px;color:var(--mu)}
+.seg button.active{background:var(--sf);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.cr{width:100%;display:flex;align-items:center;gap:14px;text-align:left;min-height:62px;padding:0 16px;border-bottom:1px solid var(--ln);background:var(--sf)}
+.cr:last-child{border:0}.cr .name{flex:1;font-size:17px;padding:12px 0}.cr.on .name{color:var(--mu)}
+.box{width:34px;height:34px;border-radius:50%;border:2px solid #C5CBD4;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700}
+.cr.on .box{background:var(--ok);border-color:var(--ok)}
+.state{font-size:13px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--lates);color:var(--late)}
+.cr.on .state{background:var(--oks);color:var(--ok)}
+.key{background:var(--sf);border:1px solid var(--ln);border-radius:20px;padding:16px;margin-top:20px}
+.key b{display:block;margin-bottom:8px}.key .btn{margin-top:10px}
+.hint{font-size:14px;color:var(--mu);margin-top:8px}
+.hint code{background:rgba(0,0,0,.06);padding:1px 6px;border-radius:6px;word-break:break-all}
+.dz{margin-top:24px}
+.backdrop{position:fixed;inset:0;background:rgba(24,32,43,.38);z-index:60;display:none}.backdrop.open{display:block}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:70;background:var(--sf);border-radius:24px 24px 0 0;max-height:92%;overflow-y:auto;transform:translateY(105%);transition:transform .25s;visibility:hidden}
 .sheet.open{transform:none;visibility:visible}
-.sheet-in{max-width:720px;margin:0 auto;padding:10px 20px calc(env(safe-area-inset-bottom,0px) + 20px)}
-.grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 14px}
-.sheet h2{font-size:21px;font-weight:700;margin-bottom:16px}
-.sheet label{display:block;font-size:14px;font-weight:600;color:var(--muted);margin:14px 0 6px}
-.sheet .actions{display:flex;gap:10px;margin-top:22px}
-.sheet .actions .btn{flex:1}
-.hint{font-size:14px;color:var(--muted);margin-top:8px}
-
-/* ---------- ว่าง / แจ้งเตือน ---------- */
-.empty{text-align:center;padding:48px 24px;color:var(--muted)}
-.empty h3{color:var(--ink);font-size:18px;font-weight:600;margin-bottom:6px}
-.empty p{font-size:15px;margin-bottom:18px}
-.notice{background:var(--soon-soft);border:1px solid #F0DDAE;color:#6B4A0B;border-radius:var(--r-lg);padding:16px;margin-bottom:14px;font-size:15px}
-.notice b{display:block;margin-bottom:4px}
-.notice code{background:rgba(0,0,0,.06);padding:1px 6px;border-radius:6px;font-size:14px}
-
-.toast{
-  position:fixed;left:50%;transform:translate(-50%,20px);opacity:0;pointer-events:none;
-  bottom:calc(var(--tabbar) + env(safe-area-inset-bottom,0px) + 90px);
-  background:var(--ink);color:#fff;padding:12px 18px;border-radius:999px;font-size:15px;z-index:90;
-  transition:all .25s ease;max-width:90%;text-align:center;
-}
+.sin{max-width:720px;margin:0 auto;padding:20px 20px calc(env(safe-area-inset-bottom,0px) + 20px)}
+.sheet h2{font-size:21px;margin-bottom:16px}
+.sheet label{display:block;font-size:14px;font-weight:600;color:var(--mu);margin:14px 0 6px}
+.acts{display:flex;gap:10px;margin-top:22px}.acts .btn{flex:1}
+.empty{text-align:center;padding:48px 24px;color:var(--mu)}.empty h3{color:var(--ink);font-size:18px;margin-bottom:6px}
+#gate{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;justify-content:center;gap:14px;padding:32px;max-width:460px;margin:0 auto}
+#gate h2{font-size:24px}
+.toast{position:fixed;left:50%;transform:translate(-50%,20px);opacity:0;pointer-events:none;bottom:calc(var(--tb) + env(safe-area-inset-bottom,0px) + 90px);background:var(--ink);color:#fff;padding:12px 18px;border-radius:999px;font-size:15px;z-index:110;transition:all .25s;max-width:90%;text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
-
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
-</style>
-</head>
+</style></head>
 <body>
-
+<div id="gate"><p>กำลังโหลด…</p></div>
 <div class="app">
-  <header class="topbar">
-    <h1>ตรวจงานค้าง</h1>
-    <div class="sync" id="sync"><i></i><span id="syncText">กำลังเชื่อมต่อ</span></div>
+  <header class="topbar"><h1>ตรวจงานค้าง</h1>
+    <div style="display:flex;gap:8px;align-items:center"><div class="sync" id="sync"><i></i><span id="syncText">กำลังเชื่อมต่อ</span></div><button class="link" data-act="logout">ออก</button></div>
   </header>
-
-  <div id="configNotice"></div>
-
-  <!-- หน้า: งาน -->
-  <section class="view active" id="viewTasks">
-    <div class="list" id="taskList"></div>
-  </section>
-
-  <!-- หน้า: รายชื่อ -->
+  <section class="view active" id="viewTasks"><div class="chips" id="chips"></div><div class="list" id="taskList"></div></section>
   <section class="view" id="viewPeople">
-    <div class="add-row">
-      <input class="field" id="personInput" type="text" placeholder="ชื่อนักเรียน / สมาชิก" autocomplete="off" enterkeyhint="done">
-      <button class="btn primary" id="personAdd">เพิ่ม</button>
-    </div>
-    <div class="sub-actions">
-      <span id="peopleCount"></span>
-      <button class="link" id="bulkOpen">เพิ่มหลายชื่อพร้อมกัน</button>
-    </div>
+    <div class="add-row"><input class="field" id="personInput" placeholder="ชื่อนักเรียน / สมาชิก" autocomplete="off" enterkeyhint="done"><button class="btn primary" id="personAdd">เพิ่ม</button></div>
+    <div class="sub"><span id="peopleCount"></span><button class="link" id="bulkOpen">เพิ่มหลายชื่อพร้อมกัน</button></div>
     <div id="peopleList"></div>
   </section>
 </div>
-
-<button class="fab" id="fabAdd" aria-label="เพิ่มงานใหม่">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-  เพิ่มงาน
-</button>
-
-<nav class="tabbar">
-  <div class="tabbar-in">
-    <button class="tab active" data-tab="tasks">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 9h8M8 13h8M8 17h4"/></svg>
-      งาน
-    </button>
-    <button class="tab" data-tab="people">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.7a3.5 3.5 0 0 1 0 6.6M18 14.8c2 .7 3.2 2.4 3.5 5.2"/></svg>
-      รายชื่อ
-    </button>
-  </div>
-</nav>
-
-<!-- หน้ารายละเอียดงาน -->
-<div class="detail" id="detail">
-  <div class="detail-in" id="detailBody"></div>
-</div>
-
-<!-- แผ่นเพิ่มงาน -->
+<button class="fab" id="fabAdd">＋ เพิ่มงาน</button>
+<nav class="tabbar"><div>
+  <button class="tab active" data-tab="tasks">งาน</button>
+  <button class="tab" data-tab="people">รายชื่อ</button>
+</div></nav>
+<div class="detail" id="detail"><div class="din" id="detailBody"></div></div>
 <div class="backdrop" id="backdrop"></div>
-<div class="sheet" id="sheetTask" role="dialog" aria-label="เพิ่มงานใหม่">
-  <div class="sheet-in">
-    <div class="grab"></div>
-    <h2>เพิ่มงานใหม่</h2>
-    <label for="fSubject">วิชา</label>
-    <input class="field" id="fSubject" list="subjectList" type="text" placeholder="เช่น คณิตศาสตร์" autocomplete="off">
-    <datalist id="subjectList"></datalist>
-    <label for="fTitle">ชื่องาน</label>
-    <input class="field" id="fTitle" type="text" placeholder="เช่น แบบฝึกหัดบทที่ 3" autocomplete="off">
-    <label for="fDue">กำหนดส่ง</label>
-    <input class="field" id="fDue" type="date">
-    <div class="actions">
-      <button class="btn ghost" data-close>ยกเลิก</button>
-      <button class="btn primary" id="taskSave">บันทึกงาน</button>
-    </div>
-  </div>
-</div>
-
-<!-- แผ่นเพิ่มหลายชื่อ -->
-<div class="sheet" id="sheetBulk" role="dialog" aria-label="เพิ่มหลายชื่อ">
-  <div class="sheet-in">
-    <div class="grab"></div>
-    <h2>เพิ่มหลายชื่อพร้อมกัน</h2>
-    <textarea class="field" id="bulkText" placeholder="พิมพ์หรือวางรายชื่อ&#10;หนึ่งบรรทัดต่อหนึ่งคน"></textarea>
-    <p class="hint">รายชื่อจะเรียงตามลำดับที่วาง</p>
-    <div class="actions">
-      <button class="btn ghost" data-close>ยกเลิก</button>
-      <button class="btn primary" id="bulkSave">เพิ่มรายชื่อ</button>
-    </div>
-  </div>
-</div>
-
+<div class="sheet" id="sheetTask"><div class="sin">
+  <h2>เพิ่มงานใหม่</h2>
+  <label for="fSubject">วิชา</label><input class="field" id="fSubject" list="subjectList" placeholder="เช่น คณิตศาสตร์" autocomplete="off"><datalist id="subjectList"></datalist>
+  <label for="fTitle">ชื่องาน</label><input class="field" id="fTitle" placeholder="เช่น แบบฝึกหัดบทที่ 3" autocomplete="off">
+  <label for="fDue">กำหนดส่ง</label><input class="field" id="fDue" type="date">
+  <div class="acts"><button class="btn ghost" data-close>ยกเลิก</button><button class="btn primary" id="taskSave">บันทึกงาน</button></div>
+</div></div>
+<div class="sheet" id="sheetBulk"><div class="sin">
+  <h2>เพิ่มหลายชื่อพร้อมกัน</h2>
+  <textarea class="field" id="bulkText" placeholder="หนึ่งบรรทัดต่อหนึ่งคน"></textarea>
+  <div class="acts"><button class="btn ghost" data-close>ยกเลิก</button><button class="btn primary" id="bulkSave">เพิ่มรายชื่อ</button></div>
+</div></div>
 <div class="toast" id="toast"></div>
 
 <script>
-/* ==========================================================
-   กันซูมบน iPad / iOS (ดักจับ touchend แบบ passive:false)
-   ========================================================== */
-(function () {
-  var lastTouchEnd = 0, lastTarget = null;
-  document.addEventListener('touchend', function (e) {
-    var now = Date.now();
-    var t = e.target.closest ? (e.target.closest('button,input,textarea,label') || e.target) : e.target;
-    // แตะซ้ำที่เดิมภายใน 300ms = double-tap zoom -> ยกเลิก
-    if (now - lastTouchEnd <= 300 && t === lastTarget) e.preventDefault();
-    lastTouchEnd = now;
-    lastTarget = t;
-  }, { passive: false });
-
-  // กัน pinch-zoom บน iOS Safari
-  ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (n) {
-    document.addEventListener(n, function (e) { e.preventDefault(); }, { passive: false });
-  });
-  document.addEventListener('touchmove', function (e) {
-    if (e.touches.length > 1 || (e.scale && e.scale !== 1)) e.preventDefault();
-  }, { passive: false });
-})();
-
-/* ไอคอนหน้าจอโฮม (สร้างอัตโนมัติ ไม่ต้องมีไฟล์รูป) */
-(function () {
-  try {
-    var c = document.createElement('canvas'); c.width = c.height = 180;
-    var g = c.getContext('2d');
-    g.fillStyle = '#2D4EF5'; g.fillRect(0, 0, 180, 180);
-    g.strokeStyle = '#fff'; g.lineWidth = 16; g.lineCap = 'round'; g.lineJoin = 'round';
-    g.beginPath(); g.moveTo(52, 94); g.lineTo(80, 122); g.lineTo(130, 62); g.stroke();
-    document.getElementById('touchIcon').href = c.toDataURL('image/png');
-  } catch (e) {}
-})();
+['gesturestart','gesturechange','gestureend'].forEach(n=>document.addEventListener(n,e=>e.preventDefault(),{passive:false}));
 </script>
-
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-import { getDatabase, ref, onValue, push, set, update } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
+import {initializeApp} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+import {getDatabase,ref,onValue,push,set,update,get} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
+import {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 
-/* ==========================================================
-   ▼▼▼ วางค่า firebaseConfig ของโปรเจกต์คุณแทนที่ตรงนี้ ▼▼▼
-   ========================================================== */
-const firebaseConfig = {
-  apiKey: "AIzaSyB4vfR2nCgGMlNSNGl5a0iHlNaNI0LFHuM",
-  authDomain: "harune-eb66f.firebaseapp.com",
-  databaseURL: "https://harune-eb66f-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "harune-eb66f",
-  storageBucket: "harune-eb66f.firebasestorage.app",
-  messagingSenderId: "555612322072",
-  appId: "1:555612322072:web:b13dbf38f139a38c89066d",
-  measurementId: "G-NBLLLT20PM"
+const cfg={
+  apiKey:"AIzaSyB4vfR2nCgGMlNSNGl5a0iHlNaNI0LFHuM",
+  authDomain:"harune-eb66f.firebaseapp.com",
+  databaseURL:"https://harune-eb66f-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"harune-eb66f",
+  appId:"1:555612322072:web:b13dbf38f139a38c89066d"
 };
-/* ▲▲▲ จบส่วนตั้งค่า ▲▲▲ */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const S={students:{},assignments:{},subs:{},keys:{},tab:'tasks',openId:null,pending:false,subj:''};
+const app=initializeApp(cfg),db=getDatabase(app),auth=getAuth(app);
+const NS='ไม่ระบุวิชา';
 
-const $ = (s) => document.querySelector(s);
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let tt;
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2600)}
+async function safe(fn){try{await fn()}catch(e){console.error(e);toast('บันทึกไม่สำเร็จ (สิทธิ์ไม่พอหรือออฟไลน์)')}}
+const onErr=e=>{console.error(e);$('#syncText').textContent='เชื่อมต่อไม่ได้'};
+const gate=h=>{$('#gate').hidden=false;$('#gate').innerHTML=h};
 
-const state = {
-  students: {},      // id -> {name, order}
-  assignments: {},   // id -> {subject, title, due, createdAt}
-  subs: {},          // assignmentId -> { studentId: true }
-  tab: 'tasks',
-  openId: null,
-  onlyPending: false
-};
-
-const configured = !String(firebaseConfig.apiKey).startsWith('YOUR_');
-let db = null;
-
-/* ---------- Toast ---------- */
-let toastTimer;
-function toast(msg) {
-  const t = $('#toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
-}
-async function safe(fn) {
-  try { await fn(); }
-  catch (e) { console.error(e); toast('บันทึกไม่สำเร็จ ตรวจสอบการเชื่อมต่อหรือ Rules ของ Firebase'); }
-}
-
-/* ---------- Firebase ---------- */
-if (configured) {
-  try {
-    const app = initializeApp(firebaseConfig);
-    db = getDatabase(app);
-    onValue(ref(db, '.info/connected'), (s) => {
-      const on = s.val() === true;
-      $('#sync').classList.toggle('on', on);
-      $('#syncText').textContent = on ? 'ซิงก์สด' : 'ออฟไลน์';
-    });
-    onValue(ref(db, 'students'), (s) => { state.students = s.val() || {}; render(); }, onErr);
-    onValue(ref(db, 'assignments'), (s) => { state.assignments = s.val() || {}; render(); }, onErr);
-    onValue(ref(db, 'submissions'), (s) => { state.subs = s.val() || {}; render(); }, onErr);
-  } catch (e) { onErr(e); }
-} else {
-  $('#syncText').textContent = 'ยังไม่ตั้งค่า';
-  $('#configNotice').innerHTML =
-    '<div class="notice"><b>ยังไม่ได้เชื่อมต่อ Firebase</b>เปิดไฟล์ index.html แล้ววางค่าใน <code>firebaseConfig</code> ของโปรเจกต์คุณ จากนั้นอัปโหลดใหม่</div>';
-}
-function onErr(e) {
-  console.error(e);
-  $('#syncText').textContent = 'เชื่อมต่อไม่ได้';
-  toast('อ่านข้อมูลไม่ได้ ตรวจสอบ databaseURL และ Rules');
+/* ---------- ล็อกอิน ---------- */
+function login(){const p=new GoogleAuthProvider();signInWithPopup(auth,p).catch(e=>{if(e.code!=='auth/popup-closed-by-user')signInWithRedirect(auth,p)})}
+let started=false;
+onAuthStateChanged(auth,async u=>{
+  if(!u){gate('<h2>เข้าสู่ระบบ</h2><p class="hint">สำหรับครู / แอดมิน</p><button class="btn primary block" data-act="login">เข้าสู่ระบบด้วย Google</button>');return}
+  let ok=false;
+  try{ok=(await get(ref(db,'admins/'+u.uid))).val()===true}catch(e){}
+  if(!ok){gate(`<h2>บัญชีนี้ไม่ใช่แอดมิน</h2><p>${esc(u.email||'')}</p><p class="hint">ให้เจ้าของโปรเจกต์เพิ่มใน Firebase Console:<br><code>admins/${esc(u.uid)}</code> = true</p><button class="btn ghost block" data-act="logout">ออกจากระบบ</button>`);return}
+  $('#gate').hidden=true;
+  if(!started){started=true;start()}
+});
+function start(){
+  onValue(ref(db,'.info/connected'),s=>{const on=s.val()===true;$('#sync').classList.toggle('on',on);$('#syncText').textContent=on?'ซิงก์สด':'ออฟไลน์'});
+  const L=(p,k)=>onValue(ref(db,p),s=>{S[k]=s.val()||{};render()},onErr);
+  L('students','students');L('assignments','assignments');L('submissions','subs');L('answerKeys','keys');
 }
 
 /* ---------- ตัวช่วย ---------- */
-function studentList() {
-  return Object.entries(state.students)
-    .map(([id, v]) => ({ id, name: v.name, order: v.order || 0 }))
-    .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, 'th'));
+const studentList=()=>Object.entries(S.students).map(([id,v])=>({id,name:v.name,order:v.order||0,uid:v.uid})).sort((a,b)=>a.order-b.order||a.name.localeCompare(b.name,'th'));
+const countDone=aid=>{const s=S.subs[aid]||{};let n=0;for(const k in S.students)if(s[k])n++;return n};
+const hue=s=>{let h=0;for(const c of s||'')h=(h*31+c.charCodeAt(0))%360;return h};
+function dueInfo(due,complete){
+  if(!due)return{label:'ไม่ระบุ',rel:'',cls:''};
+  const [y,m,d]=due.split('-').map(Number),dt=new Date(y,m-1,d),t=new Date();t.setHours(0,0,0,0);
+  const diff=Math.round((dt-t)/864e5),label=dt.toLocaleDateString('th-TH',{day:'numeric',month:'short'});
+  let rel,cls='';
+  if(diff<0){rel='เลยกำหนด '+(-diff)+' วัน';cls='late'}else if(diff===0){rel='ส่งวันนี้';cls='soon'}else if(diff===1){rel='พรุ่งนี้';cls='soon'}else rel='อีก '+diff+' วัน';
+  return{label,rel,cls:complete?'ok':cls};
 }
-function countDone(aid) {
-  const s = state.subs[aid] || {};
-  let n = 0;
-  for (const sid in state.students) if (s[sid]) n++;
-  return n;
+function sorted(){
+  const total=Object.keys(S.students).length;
+  return Object.entries(S.assignments).map(([id,v])=>{const done=countDone(id);return{id,...v,total,done,complete:total>0&&done>=total}})
+    .sort((a,b)=>(a.complete-b.complete)||(a.due||'9999').localeCompare(b.due||'9999')||(a.createdAt||0)-(b.createdAt||0));
 }
-function hue(str) {
-  let h = 0;
-  for (const c of str || '') h = (h * 31 + c.charCodeAt(0)) % 360;
-  return h;
-}
-function dueInfo(due, complete) {
-  if (!due) return { label: 'ไม่ระบุ', rel: '', cls: '' };
-  const [y, m, d] = due.split('-').map(Number);
-  const dt = new Date(y, m - 1, d);
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const diff = Math.round((dt - today) / 86400000);
-  const label = dt.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
-  let rel, cls;
-  if (diff < 0) { rel = 'เลยกำหนด ' + (-diff) + ' วัน'; cls = 'late'; }
-  else if (diff === 0) { rel = 'ส่งวันนี้'; cls = 'soon'; }
-  else if (diff === 1) { rel = 'พรุ่งนี้'; cls = 'soon'; }
-  else { rel = 'อีก ' + diff + ' วัน'; cls = ''; }
-  if (complete) cls = 'ok';
-  return { label, rel, cls };
-}
-function sortedAssignments() {
-  return Object.entries(state.assignments)
-    .map(([id, v]) => ({ id, ...v }))
-    .map((a) => {
-      const total = Object.keys(state.students).length;
-      const done = countDone(a.id);
-      return { ...a, total, done, complete: total > 0 && done >= total };
-    })
-    .sort((a, b) => (a.complete - b.complete) || (a.due || '9999').localeCompare(b.due || '9999') || (a.createdAt || 0) - (b.createdAt || 0));
-}
-
-const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
-const ICON_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>';
-const ICON_BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
 
 /* ---------- Render ---------- */
-function render() {
-  renderTasks();
-  renderPeople();
-  renderDetail();
-  renderSubjects();
+function render(){renderTasks();renderPeople();renderDetail();
+  $('#subjectList').innerHTML=[...new Set(Object.values(S.assignments).map(a=>a.subject).filter(Boolean))].map(s=>`<option value="${esc(s)}">`).join('')}
+
+function renderTasks(){
+  const all=sorted(),subs=[...new Set(all.map(a=>a.subject||NS))].sort((a,b)=>a.localeCompare(b,'th'));
+  if(S.subj&&!subs.includes(S.subj))S.subj='';
+  $('#chips').innerHTML=subs.length>1?['',...subs].map(s=>{
+    const n=all.filter(a=>!a.complete&&(!s||(a.subject||NS)===s)).length;
+    return `<button class="chip ${S.subj===s?'active':''}" data-subj="${esc(s)}">${s?esc(s):'ทั้งหมด'}${n?' · '+n:''}</button>`}).join(''):'';
+  const list=S.subj?all.filter(a=>(a.subject||NS)===S.subj):all,el=$('#taskList');
+  if(!list.length){el.innerHTML='<div class="empty"><h3>ยังไม่มีงานในระบบ</h3><p>กด “เพิ่มงาน” เพื่อสร้างงานชิ้นแรก</p></div>';return}
+  el.innerHTML=list.map(a=>{
+    const di=dueInfo(a.due,a.complete),pct=a.total?Math.round(a.done/a.total*100):0;
+    return `<button class="task ${a.complete?'done':''}" data-open="${esc(a.id)}">
+      <div class="th"><div><div class="subject"><i style="background:hsl(${hue(a.subject)} 62% 52%)"></i>${esc(a.subject||NS)}${S.keys[a.id]?' · มีเฉลย':''}</div><h3>${esc(a.title)}</h3></div>
+      <div class="due ${di.cls}"><b>${esc(di.label)}</b>${di.rel?`<span>${esc(di.rel)}</span>`:''}</div></div>
+      <div class="bar ${a.complete?'full':''}"><div style="width:${pct}%"></div></div>
+      <p class="pg">${a.total?`ส่งแล้ว <b>${a.done}/${a.total}</b> คน`:'ยังไม่มีรายชื่อ'}</p></button>`}).join('');
 }
 
-function renderTasks() {
-  const list = sortedAssignments();
-  const el = $('#taskList');
-  if (!list.length) {
-    el.innerHTML = '<div class="empty"><h3>ยังไม่มีงานในระบบ</h3><p>กด “เพิ่มงาน” เพื่อสร้างงานชิ้นแรก แล้วเพิ่มรายชื่อในแท็บรายชื่อ</p></div>';
-    return;
-  }
-  el.innerHTML = list.map((a) => {
-    const di = dueInfo(a.due, a.complete);
-    const pct = a.total ? Math.round((a.done / a.total) * 100) : 0;
-    return `
-    <button class="task ${a.complete ? 'done' : ''}" data-open="${esc(a.id)}">
-      <div class="task-head">
-        <div>
-          <div class="subject"><i style="background:hsl(${hue(a.subject)} 62% 52%)"></i>${esc(a.subject || 'ไม่ระบุวิชา')}</div>
-          <h3>${esc(a.title)}</h3>
-        </div>
-        <div class="due ${di.cls}"><b>${esc(di.label)}</b>${di.rel ? `<span>${esc(di.rel)}</span>` : ''}</div>
-      </div>
-      <div class="progress">
-        <div class="bar ${a.complete ? 'full' : ''}"><div style="width:${pct}%"></div></div>
-        <p>${a.total ? `ส่งแล้ว <b>${a.done}/${a.total}</b> คน` : 'ยังไม่มีรายชื่อ'}</p>
-      </div>
-    </button>`;
-  }).join('');
+function renderPeople(){
+  const list=studentList();
+  $('#peopleCount').textContent=list.length?`ทั้งหมด ${list.length} คน · ผูกบัญชีแล้ว ${list.filter(s=>s.uid).length}`:'';
+  $('#peopleList').innerHTML=list.length?'<div class="rows">'+list.map((s,i)=>`<div class="row"><span class="idx">${i+1}</span><span class="name">${esc(s.name)}</span>
+    ${s.uid?`<button class="tag" data-release="${esc(s.id)}">ผูกบัญชีแล้ว · ปลด</button>`:''}
+    <button class="ib" data-del-student="${esc(s.id)}" aria-label="ลบ">🗑</button></div>`).join('')+'</div>'
+    :'<div class="empty"><h3>ยังไม่มีรายชื่อ</h3><p>พิมพ์ชื่อด้านบนแล้วกด “เพิ่ม”</p></div>';
 }
 
-function renderPeople() {
-  const list = studentList();
-  $('#peopleCount').textContent = list.length ? `ทั้งหมด ${list.length} คน` : '';
-  const el = $('#peopleList');
-  if (!list.length) {
-    el.innerHTML = '<div class="empty"><h3>ยังไม่มีรายชื่อ</h3><p>พิมพ์ชื่อด้านบนแล้วกด “เพิ่ม” หรือวางหลายชื่อพร้อมกัน</p></div>';
-    return;
-  }
-  el.innerHTML = '<div class="rows">' + list.map((s, i) => `
-    <div class="row">
-      <span class="idx">${i + 1}</span>
-      <span class="name">${esc(s.name)}</span>
-      <button class="icon-btn" data-del-student="${esc(s.id)}" aria-label="ลบ ${esc(s.name)}">${ICON_TRASH}</button>
-    </div>`).join('') + '</div>';
-}
-
-function renderSubjects() {
-  const subjects = [...new Set(Object.values(state.assignments).map((a) => a.subject).filter(Boolean))];
-  $('#subjectList').innerHTML = subjects.map((s) => `<option value="${esc(s)}">`).join('');
-}
-
-function renderDetail() {
-  const box = $('#detail');
-  const a = state.assignments[state.openId];
-  if (!state.openId || !a) {
-    box.classList.remove('open');
-    if (state.openId && !a) state.openId = null;
-    return;
-  }
+function renderDetail(){
+  const box=$('#detail'),a=S.assignments[S.openId];
+  if(!S.openId||!a){box.classList.remove('open');if(S.openId&&!a)S.openId=null;return}
   box.classList.add('open');
-
-  const students = studentList();
-  const total = students.length;
-  const subs = state.subs[state.openId] || {};
-  const done = students.filter((s) => subs[s.id]).length;
-  const pending = total - done;
-  const pct = total ? Math.round((done / total) * 100) : 0;
-  const di = dueInfo(a.due, total > 0 && done === total);
-  const shown = state.onlyPending ? students.filter((s) => !subs[s.id]) : students;
-
-  let rows;
-  if (!total) {
-    rows = '<div class="empty"><h3>ยังไม่มีรายชื่อ</h3><p>ไปที่แท็บ “รายชื่อ” เพื่อเพิ่มนักเรียนก่อน</p></div>';
-  } else if (!shown.length) {
-    rows = '<div class="empty"><h3>ส่งครบทุกคนแล้ว</h3><p>ไม่มีใครค้างงานชิ้นนี้</p></div>';
-  } else {
-    rows = '<div class="rows">' + shown.map((s) => `
-      <button class="check-row ${subs[s.id] ? 'on' : ''}" data-toggle="${esc(s.id)}" role="checkbox" aria-checked="${!!subs[s.id]}">
-        <span class="box">${ICON_CHECK}</span>
-        <span class="name">${esc(s.name)}</span>
-        <span class="state">${subs[s.id] ? 'ส่งแล้ว' : 'ยังไม่ส่ง'}</span>
-      </button>`).join('') + '</div>';
-  }
-
-  const scrollTop = box.scrollTop;
-  $('#detailBody').innerHTML = `
-    <button class="back" data-back>${ICON_BACK}งานทั้งหมด</button>
-    <div class="d-title">
-      <div class="subject"><i style="background:hsl(${hue(a.subject)} 62% 52%)"></i>${esc(a.subject || 'ไม่ระบุวิชา')}</div>
-      <h2>${esc(a.title)}</h2>
-    </div>
-    <div class="summary">
-      <div class="big">ส่งแล้ว ${done}/${total}<small>คน</small></div>
-      <div class="bar ${total && done === total ? 'full' : ''}"><div style="width:${pct}%"></div></div>
-      <div class="meta"><span>กำหนดส่ง ${esc(di.label)}</span><span>${esc(di.rel)}</span></div>
-    </div>
-    <div class="seg">
-      <button data-filter="all" class="${state.onlyPending ? '' : 'active'}">ทั้งหมด (${total})</button>
-      <button data-filter="pending" class="${state.onlyPending ? 'active' : ''}">ยังไม่ส่ง (${pending})</button>
-    </div>
+  if(document.activeElement&&document.activeElement.id==='keyText')return;
+  const st=studentList(),total=st.length,subs=S.subs[S.openId]||{},done=st.filter(s=>subs[s.id]).length,pct=total?Math.round(done/total*100):0;
+  const di=dueInfo(a.due,total>0&&done===total),shown=S.pending?st.filter(s=>!subs[s.id]):st;
+  const rows=!total?'<div class="empty"><h3>ยังไม่มีรายชื่อ</h3></div>':!shown.length?'<div class="empty"><h3>ส่งครบทุกคนแล้ว</h3></div>'
+    :'<div class="rows">'+shown.map(s=>`<button class="cr ${subs[s.id]?'on':''}" data-toggle="${esc(s.id)}"><span class="box">${subs[s.id]?'✓':''}</span><span class="name">${esc(s.name)}</span><span class="state">${subs[s.id]?'ส่งแล้ว':'ยังไม่ส่ง'}</span></button>`).join('')+'</div>';
+  const top=box.scrollTop;
+  $('#detailBody').innerHTML=`<button class="back" data-back>‹ งานทั้งหมด</button>
+    <div class="subject"><i style="background:hsl(${hue(a.subject)} 62% 52%)"></i>${esc(a.subject||NS)}</div><h2>${esc(a.title)}</h2>
+    <div class="summary"><div class="big">ส่งแล้ว ${done}/${total}<small>คน</small></div>
+    <div class="bar ${total&&done===total?'full':''}"><div style="width:${pct}%"></div></div>
+    <div class="meta"><span>กำหนดส่ง ${esc(di.label)}</span><span>${esc(di.rel)}</span></div></div>
+    <div class="seg"><button data-filter="all" class="${S.pending?'':'active'}">ทั้งหมด (${total})</button><button data-filter="pending" class="${S.pending?'active':''}">ยังไม่ส่ง (${total-done})</button></div>
     ${rows}
-    <div class="delete-zone"><button class="btn danger block" data-del-task>ลบงานนี้</button></div>`;
-  box.scrollTop = scrollTop;
+    <div class="key"><b>เฉลยงาน</b><textarea class="field" id="keyText" placeholder="พิมพ์เฉลย หรือวางลิงก์ไฟล์เฉลย">${esc(S.keys[S.openId]?.text||'')}</textarea>
+    <button class="btn primary block" data-savekey>บันทึกเฉลย</button><p class="hint">นักเรียนเห็นเฉลยได้เมื่อกดส่งงานแล้วเท่านั้น</p></div>
+    <div class="dz"><button class="btn danger block" data-del-task>ลบงานนี้</button></div>`;
+  box.scrollTop=top;
 }
 
 /* ---------- Actions ---------- */
-function toggleSub(sid) {
-  const aid = state.openId;
-  const on = !(state.subs[aid] && state.subs[aid][sid]);
-  // อัปเดตในเครื่องทันที แล้วค่อยส่งขึ้น Firebase
-  state.subs[aid] = state.subs[aid] || {};
-  if (on) state.subs[aid][sid] = true; else delete state.subs[aid][sid];
-  render();
-  if (!db) return toast('ยังไม่ได้ตั้งค่า Firebase');
-  safe(() => set(ref(db, `submissions/${aid}/${sid}`), on ? true : null));
+function toggleSub(sid){
+  const aid=S.openId,on=!(S.subs[aid]&&S.subs[aid][sid]);
+  S.subs[aid]=S.subs[aid]||{};on?S.subs[aid][sid]=true:delete S.subs[aid][sid];render();
+  safe(()=>set(ref(db,`submissions/${aid}/${sid}`),on?true:null));
 }
-
-async function addStudents(names) {
-  if (!db) return toast('ยังไม่ได้ตั้งค่า Firebase');
-  const clean = names.map((n) => n.trim()).filter(Boolean);
-  if (!clean.length) return;
-  const base = Date.now();
-  const updates = {};
-  clean.forEach((name, i) => {
-    const key = push(ref(db, 'students')).key;
-    updates[`students/${key}`] = { name, order: base + i };
-  });
-  await safe(() => update(ref(db), updates));
+async function addStudents(names){
+  const clean=names.map(n=>n.trim()).filter(Boolean);if(!clean.length)return;
+  const base=Date.now(),u={};
+  clean.forEach((name,i)=>{u[`students/${push(ref(db,'students')).key}`]={name,order:base+i}});
+  await safe(()=>update(ref(db),u));
 }
-
-async function deleteStudent(id) {
-  const s = state.students[id];
-  if (!s || !confirm(`ลบ “${s.name}” ออกจากรายชื่อ?\nสถานะการส่งงานของคนนี้จะถูกลบด้วย`)) return;
-  if (!db) return toast('ยังไม่ได้ตั้งค่า Firebase');
-  const updates = { [`students/${id}`]: null };
-  Object.keys(state.assignments).forEach((aid) => { updates[`submissions/${aid}/${id}`] = null; });
-  await safe(() => update(ref(db), updates));
+async function deleteStudent(id){
+  const s=S.students[id];if(!s||!confirm(`ลบ “${s.name}” ออกจากรายชื่อ?\nสถานะการส่งงานของคนนี้จะถูกลบด้วย`))return;
+  const u={[`students/${id}`]:null};if(s.uid)u[`users/${s.uid}`]=null;
+  Object.keys(S.assignments).forEach(a=>{u[`submissions/${a}/${id}`]=null});
+  await safe(()=>update(ref(db),u));
 }
-
-async function deleteTask() {
-  const a = state.assignments[state.openId];
-  if (!a || !confirm(`ลบงาน “${a.title}”?\nข้อมูลการส่งงานทั้งหมดของงานนี้จะหายไป`)) return;
-  if (!db) return toast('ยังไม่ได้ตั้งค่า Firebase');
-  const id = state.openId;
-  state.openId = null;
-  await safe(() => update(ref(db), { [`assignments/${id}`]: null, [`submissions/${id}`]: null }));
+async function release(id){
+  const s=S.students[id];if(!s||!confirm(`ปลดล็อกบัญชีที่ผูกกับ “${s.name}”?\nนักเรียนจะเลือกชื่อใหม่ได้`))return;
+  await safe(()=>update(ref(db),{[`students/${id}/uid`]:null,[`users/${s.uid}`]:null}));
 }
-
-async function saveTask() {
-  const subject = $('#fSubject').value.trim();
-  const title = $('#fTitle').value.trim();
-  const due = $('#fDue').value;
-  if (!subject || !title) return toast('กรอกวิชาและชื่องานให้ครบ');
-  if (!db) return toast('ยังไม่ได้ตั้งค่า Firebase');
-  const key = push(ref(db, 'assignments')).key;
-  await safe(() => set(ref(db, `assignments/${key}`), { subject, title, due: due || '', createdAt: Date.now() }));
-  closeSheets();
-  $('#fTitle').value = '';
+async function deleteTask(){
+  const a=S.assignments[S.openId];if(!a||!confirm(`ลบงาน “${a.title}”?\nข้อมูลการส่งงานและเฉลยของงานนี้จะหายไป`))return;
+  const id=S.openId;S.openId=null;
+  await safe(()=>update(ref(db),{[`assignments/${id}`]:null,[`submissions/${id}`]:null,[`answerKeys/${id}`]:null}));
 }
-
-/* ---------- แผ่น (sheet) ---------- */
-function openSheet(id) {
-  $('#backdrop').classList.add('open');
-  $(id).classList.add('open');
+async function saveKey(){
+  const v=$('#keyText').value.trim();
+  await safe(()=>set(ref(db,'answerKeys/'+S.openId),v?{text:v}:null));
+  document.activeElement.blur();toast(v?'บันทึกเฉลยแล้ว':'ลบเฉลยแล้ว');renderDetail();
 }
-function closeSheets() {
-  $('#backdrop').classList.remove('open');
-  document.querySelectorAll('.sheet').forEach((s) => s.classList.remove('open'));
-  if (document.activeElement) document.activeElement.blur();
+async function saveTask(){
+  const subject=$('#fSubject').value.trim(),title=$('#fTitle').value.trim(),due=$('#fDue').value;
+  if(!subject||!title)return toast('กรอกวิชาและชื่องานให้ครบ');
+  await safe(()=>set(ref(db,'assignments/'+push(ref(db,'assignments')).key),{subject,title,due,createdAt:Date.now()}));
+  closeSheets();$('#fTitle').value='';
 }
-function ymd(d) {
-  const p = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-}
+const openSheet=id=>{$('#backdrop').classList.add('open');$(id).classList.add('open')};
+function closeSheets(){$('#backdrop').classList.remove('open');document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('open'));document.activeElement?.blur()}
+const ymd=d=>{const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`};
 
 /* ---------- Events ---------- */
-document.addEventListener('click', (e) => {
-  const t = e.target.closest('button');
-  if (!t) return;
-
-  if (t.dataset.tab) {
-    state.tab = t.dataset.tab;
-    document.querySelectorAll('.tab').forEach((b) => b.classList.toggle('active', b === t));
-    $('#viewTasks').classList.toggle('active', state.tab === 'tasks');
-    $('#viewPeople').classList.toggle('active', state.tab === 'people');
-    $('#fabAdd').style.display = state.tab === 'tasks' ? 'flex' : 'none';
-    window.scrollTo(0, 0);
-  } else if (t.dataset.open) {
-    state.openId = t.dataset.open; state.onlyPending = false; render();
-  } else if (t.dataset.toggle) {
-    toggleSub(t.dataset.toggle);
-  } else if (t.dataset.filter) {
-    state.onlyPending = t.dataset.filter === 'pending'; renderDetail();
-  } else if ('back' in t.dataset) {
-    state.openId = null; render();
-  } else if ('delTask' in t.dataset) {
-    deleteTask();
-  } else if (t.dataset.delStudent) {
-    deleteStudent(t.dataset.delStudent);
-  } else if (t.id === 'fabAdd') {
-    $('#fDue').value = ymd(new Date(Date.now() + 7 * 86400000));
-    openSheet('#sheetTask');
-  } else if (t.id === 'taskSave') {
-    saveTask();
-  } else if (t.id === 'personAdd') {
-    const v = $('#personInput').value;
-    $('#personInput').value = '';
-    addStudents([v]);
-  } else if (t.id === 'bulkOpen') {
-    openSheet('#sheetBulk');
-  } else if (t.id === 'bulkSave') {
-    const lines = $('#bulkText').value.split(/\r?\n/);
-    $('#bulkText').value = '';
-    closeSheets();
-    addStudents(lines);
-  } else if ('close' in t.dataset) {
-    closeSheets();
-  }
+document.addEventListener('click',e=>{
+  const t=e.target.closest('button');if(!t)return;const d=t.dataset;
+  if(d.act==='login')login();
+  else if(d.act==='logout')signOut(auth);
+  else if(d.tab){S.tab=d.tab;document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b===t));
+    $('#viewTasks').classList.toggle('active',S.tab==='tasks');$('#viewPeople').classList.toggle('active',S.tab==='people');
+    $('#fabAdd').style.display=S.tab==='tasks'?'flex':'none';scrollTo(0,0)}
+  else if('subj' in d){S.subj=d.subj;renderTasks()}
+  else if(d.open){S.openId=d.open;S.pending=false;render()}
+  else if(d.toggle)toggleSub(d.toggle);
+  else if(d.filter){S.pending=d.filter==='pending';renderDetail()}
+  else if('back' in d){S.openId=null;render()}
+  else if('delTask' in d)deleteTask();
+  else if('savekey' in d)saveKey();
+  else if(d.delStudent)deleteStudent(d.delStudent);
+  else if(d.release)release(d.release);
+  else if(t.id==='fabAdd'){$('#fDue').value=ymd(new Date(Date.now()+7*864e5));openSheet('#sheetTask')}
+  else if(t.id==='taskSave')saveTask();
+  else if(t.id==='personAdd'){const v=$('#personInput').value;$('#personInput').value='';addStudents([v])}
+  else if(t.id==='bulkOpen')openSheet('#sheetBulk');
+  else if(t.id==='bulkSave'){const l=$('#bulkText').value.split(/\r?\n/);$('#bulkText').value='';closeSheets();addStudents(l)}
+  else if('close' in d)closeSheets();
 });
-$('#backdrop').addEventListener('click', closeSheets);
-$('#personInput').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') { e.preventDefault(); $('#personAdd').click(); }
-});
-
-render();
+$('#backdrop').addEventListener('click',closeSheets);
+$('#personInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('#personAdd').click()}});
 </script>
-</body>
-</html>
+</body></html>
