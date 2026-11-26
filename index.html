@@ -85,16 +85,17 @@ textarea.field{min-height:120px;resize:none;line-height:1.6}
 .sheet label{display:block;font-size:14px;font-weight:600;color:var(--mu);margin:14px 0 6px}
 .acts{display:flex;gap:10px;margin-top:22px}.acts .btn{flex:1}
 .empty{text-align:center;padding:48px 24px;color:var(--mu)}.empty h3{color:var(--ink);font-size:18px;margin-bottom:6px}
-#gate{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;justify-content:center;gap:14px;padding:32px;max-width:460px;margin:0 auto}
+#gate{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;justify-content:center;gap:14px;padding:32px max(32px,calc((100vw - 460px)/2));-webkit-user-select:text;user-select:text}
 #gate h2{font-size:24px}
 .toast{position:fixed;left:50%;transform:translate(-50%,20px);opacity:0;pointer-events:none;bottom:calc(var(--tb) + env(safe-area-inset-bottom,0px) + 90px);background:var(--ink);color:#fff;padding:12px 18px;border-radius:999px;font-size:15px;z-index:110;transition:all .25s;max-width:90%;text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
+.kimgs{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.kimg{position:relative;width:96px;height:96px}.kimg>button:first-child{width:100%;height:100%}.kimg img{width:100%;height:100%;object-fit:cover;border-radius:12px;display:block}.kimg .ib{position:absolute;top:2px;right:2px;width:30px;height:30px;background:rgba(0,0,0,.55);color:#fff;border-radius:50%;font-size:14px}
 </style></head>
 <body>
 <div id="gate"><p>กำลังโหลด…</p></div>
 <div class="app">
   <header class="topbar"><h1>ตรวจงานค้าง</h1>
-    <div style="display:flex;gap:8px;align-items:center"><div class="sync" id="sync"><i></i><span id="syncText">กำลังเชื่อมต่อ</span></div><button class="link" data-act="logout">ออก</button></div>
+    <div style="display:flex;gap:8px;align-items:center"><div class="sync" id="sync"><i></i><span id="syncText">กำลังเชื่อมต่อ</span></div></div>
   </header>
   <section class="view active" id="viewTasks"><div class="chips" id="chips"></div><div class="list" id="taskList"></div></section>
   <section class="view" id="viewPeople">
@@ -126,6 +127,7 @@ textarea.field{min-height:120px;resize:none;line-height:1.6}
   <div class="acts"><button class="btn ghost" data-close>ยกเลิก</button><button class="btn primary" id="bulkSave">เพิ่มรายชื่อ</button></div>
 </div></div>
 <div class="sheet" id="sheetEv"><div class="sin"><h2 id="evTitle">หลักฐาน</h2><div id="evBody"></div><button class="btn ghost block" data-close>ปิด</button></div></div>
+<input type="file" id="keyFile" accept="image/*" multiple hidden>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -134,7 +136,7 @@ textarea.field{min-height:120px;resize:none;line-height:1.6}
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import {getDatabase,ref,onValue,push,set,update,get} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
-import {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,signInWithEmailAndPassword,createUserWithEmailAndPassword,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+import {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,signInAnonymously,signInWithEmailAndPassword,createUserWithEmailAndPassword,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 
 const cfg={
   apiKey:"AIzaSyB4vfR2nCgGMlNSNGl5a0iHlNaNI0LFHuM",
@@ -145,7 +147,7 @@ const cfg={
 };
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const S={students:{},assignments:{},subs:{},keys:{},tab:'tasks',openId:null,pending:false,subj:''};
+const S={students:{},assignments:{},subs:{},keys:{},kimgs:{},tab:'tasks',openId:null,pending:false,subj:''};
 const app=initializeApp(cfg),db=getDatabase(app),auth=getAuth(app);
 const NS='ไม่ระบุวิชา';
 
@@ -163,9 +165,9 @@ function login(){const p=new GoogleAuthProvider();signInWithPopup(auth,p).catch(
 getRedirectResult(auth).catch(e=>setTimeout(()=>gerr(e),600));
 let started=false;
 onAuthStateChanged(auth,async u=>{
-  if(!u){gate(gateForm('เข้าสู่ระบบ','สำหรับครู / แอดมิน'));return}
+  if(!u){signInAnonymously(auth).catch(e=>gate(gateForm('เข้าสู่ระบบ','เข้าแบบไม่ล็อกอินไม่ได้ ('+(e.code||e.message)+') ใช้ Google หรืออีเมลแทน')));return}
   let ok=false;
-  let why='';try{ok=(await get(ref(db,'admins/'+u.uid))).val()===true}catch(e){why=e.code||e.message}
+  ok=true;let why='';
   if(!ok){gate(`<h2>บัญชีนี้ไม่ใช่แอดมิน</h2><p>${esc(u.email||'')}</p>${why?`<p class="hint">ข้อผิดพลาด: ${esc(why)}</p>`:''}<p class="hint">ให้เจ้าของโปรเจกต์เพิ่มใน Firebase Console:<br><code>admins/${esc(u.uid)}</code> = true</p><button class="btn ghost block" data-act="logout">ออกจากระบบ</button>`);return}
   $('#gate').hidden=true;
   if(!started){started=true;start()}
@@ -217,7 +219,7 @@ function renderTasks(){
 
 function renderKeys(){
   const l=sorted(),el=$('#keyList');
-  el.innerHTML=l.length?l.map(a=>`<button class="task" data-open="${esc(a.id)}"><div class="subject"><i style="background:hsl(${hue(a.subject)} 62% 52%)"></i>${esc(a.subject||NS)}</div><h3>${esc(a.title)}</h3><p class="pg">${S.keys[a.id]?.text?'มีเฉลยแล้ว · แตะเพื่อแก้':'ยังไม่มีเฉลย · แตะเพื่อเพิ่ม'}</p></button>`).join(''):'<div class="empty"><h3>ยังไม่มีงาน</h3></div>';
+  el.innerHTML=l.length?l.map(a=>`<button class="task" data-open="${esc(a.id)}"><div class="subject"><i style="background:hsl(${hue(a.subject)} 62% 52%)"></i>${esc(a.subject||NS)}</div><h3>${esc(a.title)}</h3><p class="pg">${(S.keys[a.id]?.text||S.keys[a.id]?.imgCount)?'มีเฉลยแล้ว · แตะเพื่อแก้':'ยังไม่มีเฉลย · แตะเพื่อเพิ่ม'}</p></button>`).join(''):'<div class="empty"><h3>ยังไม่มีงาน</h3></div>';
 }
 function renderPeople(){
   const list=studentList();
@@ -248,6 +250,8 @@ function renderDetail(){
     ${rows}
     <div class="key"><b>รายละเอียดงาน</b><textarea class="field" id="detText" placeholder="บอกว่าต้องทำอะไร หน้าไหน หรือวางลิงก์">${esc(a.detail||'')}</textarea><button class="btn primary block" data-savedet>บันทึกรายละเอียด</button></div>
     <div class="key"><b>เฉลยงาน</b><textarea class="field" id="keyText" placeholder="พิมพ์เฉลย หรือวางลิงก์ไฟล์เฉลย">${esc(S.keys[S.openId]?.text||'')}</textarea>
+    <div class="kimgs">${Object.entries(S.kimgs[S.openId]||{}).map(([k,v])=>`<div class="kimg"><button data-bigimg="${esc(k)}"><img src="${v}" alt=""></button><button class="ib" data-delkeyimg="${esc(k)}" aria-label="ลบรูป">✕</button></div>`).join('')}</div>
+    <button class="btn ghost block" data-addkeyimg>📷 เพิ่มรูปเฉลย</button>
     <button class="btn primary block" data-savekey>บันทึกเฉลย</button><p class="hint">นักเรียนทุกคนที่ล็อกอินดูเฉลยได้ทันที</p></div>
     <div class="dz"><button class="btn danger block" data-del-task>ลบงานนี้</button></div>`;
   box.scrollTop=top;
@@ -278,15 +282,32 @@ async function release(id){
 async function deleteTask(){
   const a=S.assignments[S.openId];if(!a||!confirm(`ลบงาน “${a.title}”?\nข้อมูลการส่งงานและเฉลยของงานนี้จะหายไป`))return;
   const id=S.openId;S.openId=null;
-  await safe(()=>update(ref(db),{[`assignments/${id}`]:null,[`submissions/${id}`]:null,[`answerKeys/${id}`]:null,[`evidence/${id}`]:null}));
+  await safe(()=>update(ref(db),{[`assignments/${id}`]:null,[`submissions/${id}`]:null,[`answerKeys/${id}`]:null,[`evidence/${id}`]:null,[`answerImgs/${id}`]:null}));
 }
 async function saveDet(){
   await safe(()=>set(ref(db,`assignments/${S.openId}/detail`),$('#detText').value.trim()||null));
   document.activeElement.blur();toast('บันทึกรายละเอียดแล้ว');renderDetail();
 }
+function loadKeyImgs(aid){get(ref(db,'answerImgs/'+aid)).then(x=>{S.kimgs[aid]=x.val()||{};renderDetail()}).catch(()=>{})}
+function shrink(f){return new Promise((ok,no)=>{const im=new Image();im.onload=()=>{const r=Math.min(1,1200/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*r);c.height=Math.round(im.height*r);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(im.src);ok(c.toDataURL('image/jpeg',.75))};im.onerror=no;im.src=URL.createObjectURL(f)})}
+$('#keyFile').addEventListener('change',async e=>{
+  const files=[...e.target.files],aid=S.openId;e.target.value='';if(!files.length||!aid)return;
+  toast('กำลังอัปโหลดรูป…');
+  try{
+    const cur=S.kimgs[aid]=S.kimgs[aid]||{};
+    for(const f of files){const k=push(ref(db,'answerImgs/'+aid)).key,img=await shrink(f);await set(ref(db,`answerImgs/${aid}/${k}`),img);cur[k]=img}
+    await update(ref(db,'answerKeys/'+aid),{imgCount:Object.keys(cur).length});
+    toast('เพิ่มรูปเฉลยแล้ว');renderDetail();
+  }catch(err){console.error(err);toast('อัปโหลดรูปไม่สำเร็จ');renderDetail()}
+});
+async function delKeyImg(k){
+  const aid=S.openId;if(!confirm('ลบรูปเฉลยนี้?'))return;
+  await safe(async()=>{await set(ref(db,`answerImgs/${aid}/${k}`),null);delete S.kimgs[aid][k];await update(ref(db,'answerKeys/'+aid),{imgCount:Object.keys(S.kimgs[aid]).length||null})});
+  renderDetail();
+}
 async function saveKey(){
   const v=$('#keyText').value.trim();
-  await safe(()=>set(ref(db,'answerKeys/'+S.openId),v?{text:v}:null));
+  await safe(()=>update(ref(db,'answerKeys/'+S.openId),{text:v||null}));
   document.activeElement.blur();toast(v?'บันทึกเฉลยแล้ว':'ลบเฉลยแล้ว');renderDetail();
 }
 async function saveTask(){
@@ -324,7 +345,7 @@ document.addEventListener('click',e=>{
     $('#viewTasks').classList.toggle('active',S.tab==='tasks');$('#viewPeople').classList.toggle('active',S.tab==='people');$('#viewKeys').classList.toggle('active',S.tab==='keys');
     $('#fabAdd').style.display=S.tab==='tasks'?'flex':'none';scrollTo(0,0)}
   else if('subj' in d){S.subj=d.subj;renderTasks()}
-  else if(d.open){S.openId=d.open;S.pending=false;render()}
+  else if(d.open){S.openId=d.open;S.pending=false;render();loadKeyImgs(d.open)}
   else if(d.toggle)toggleSub(d.toggle);
   else if(d.filter){S.pending=d.filter==='pending';renderDetail()}
   else if('back' in d){S.openId=null;render()}
@@ -332,6 +353,9 @@ document.addEventListener('click',e=>{
   else if('savekey' in d)saveKey();
   else if('savedet' in d)saveDet();
   else if(d.delStudent)deleteStudent(d.delStudent);
+  else if('addkeyimg' in d)$('#keyFile').click();
+  else if(d.delkeyimg)delKeyImg(d.delkeyimg);
+  else if(d.bigimg){$('#evTitle').textContent='รูปเฉลย';$('#evBody').innerHTML=`<img src="${S.kimgs[S.openId][d.bigimg]}" style="width:100%;border-radius:14px;margin-bottom:16px">`;openSheet('#sheetEv')}
   else if('copy' in d)copyChase();
   else if(d.evid)showEv(d.evid);
   else if(d.release)release(d.release);
