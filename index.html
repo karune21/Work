@@ -90,6 +90,39 @@ textarea.field{min-height:120px;resize:none;line-height:1.6}
 .toast{position:fixed;left:50%;transform:translate(-50%,20px);opacity:0;pointer-events:none;bottom:calc(var(--tb) + env(safe-area-inset-bottom,0px) + 90px);background:var(--ink);color:#fff;padding:12px 18px;border-radius:999px;font-size:15px;z-index:110;transition:all .25s;max-width:90%;text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .kimgs{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.kimg{position:relative;width:96px;height:96px}.kimg>button:first-child{width:100%;height:100%}.kimg img{width:100%;height:100%;object-fit:cover;border-radius:12px;display:block}.kimg .ib{position:absolute;top:2px;right:2px;width:30px;height:30px;background:rgba(0,0,0,.55);color:#fff;border-radius:50%;font-size:14px}
+
+/* ===== themes + juicy ===== */
+:root{--ac2:#7C93FF}
+html[data-theme=xmas]{--bg:#FFF6F3;--ac:#D62839;--ac2:#FF7B7B;--acs:#FDE6E9;--ok:#1E8E4E;--oks:#E2F5E8;--ink:#2B1B1B;--ln:#F0D8D3;--mu:#8C6A6A}
+html[data-theme=ny]{--bg:#F7F3FF;--ac:#6D3BE8;--ac2:#E8A317;--acs:#EDE5FF;--ok:#17A06B;--ln:#E3DBF5;--mu:#6F6890;--ink:#1D1633}
+body{transition:background .4s}
+h1::before{margin-right:6px}
+html[data-theme=xmas] h1::before{content:"🎄"}
+html[data-theme=ny] h1::before{content:"🎆"}
+html[data-theme=xmas] body::before,html[data-theme=ny] body::before{content:"";position:fixed;top:0;left:0;right:0;height:9px;z-index:200;pointer-events:none;background:radial-gradient(circle at 10px 4px,#ff4d4d 3px,transparent 4px) 0 0/40px 9px,radial-gradient(circle at 30px 4px,#2ecc71 3px,transparent 4px) 0 0/40px 9px;animation:blink 1.6s ease-in-out infinite alternate}
+html[data-theme=ny] body::before{background:radial-gradient(circle at 10px 4px,#E8A317 3px,transparent 4px) 0 0/40px 9px,radial-gradient(circle at 30px 4px,#b388ff 3px,transparent 4px) 0 0/40px 9px}
+.btn.primary,.chip.active,.fab{background-image:linear-gradient(135deg,var(--ac),var(--ac2))}
+.task,.card,.rows,.summary,.key{box-shadow:0 8px 24px rgba(24,32,43,.06)}
+.btn,.chip,.tab,.task,.card,.fab,.cr,.pick{transition:transform .18s cubic-bezier(.3,1.7,.5,1),box-shadow .2s,background-color .2s}
+.btn:active,.chip:active,.fab:active,.pick:active{transform:scale(.93)}
+.task:active,.card:active{transform:scale(.975)}
+.cr:active{transform:scale(.985)}
+.fab{animation:bob 3s ease-in-out infinite}
+.bar div,.bar.full div{background-image:linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent);background-size:200% 100%;animation:shine 2.2s linear infinite}
+.sheet{transition:transform .45s cubic-bezier(.2,1.1,.3,1)}
+.toast.show{animation:pop .4s cubic-bezier(.3,1.8,.5,1)}
+.flake{position:fixed;top:-30px;z-index:4;pointer-events:none;font-style:normal;color:#7FB2F0;text-shadow:0 0 5px rgba(127,178,240,.8);animation:fall linear infinite}
+#themeBtn{position:fixed;left:12px;bottom:calc(64px + env(safe-area-inset-bottom,0px) + 14px);width:46px;height:46px;border-radius:50%;background:var(--sf);border:1px solid var(--ln);box-shadow:0 6px 16px rgba(0,0,0,.12);font-size:22px;z-index:25}
+@keyframes blink{from{opacity:.45}to{opacity:1}}
+@keyframes fall{from{transform:translateY(-5vh) rotate(0)}to{transform:translateY(112vh) translateX(36px) rotate(360deg)}}
+@keyframes up{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes shine{from{background-position:200% 0}to{background-position:-200% 0}}
+@keyframes bob{50%{transform:translateY(-5px)}}
+@keyframes pop{0%{transform:translate(-50%,20px) scale(.7)}100%{transform:translate(-50%,0) scale(1)}}
+html.intro .list>*{animation:up .55s cubic-bezier(.2,.9,.3,1.3) both}
+html.intro .list>*:nth-child(2){animation-delay:0.10s}html.intro .list>*:nth-child(3){animation-delay:0.15s}html.intro .list>*:nth-child(4){animation-delay:0.20s}html.intro .list>*:nth-child(5){animation-delay:0.25s}html.intro .list>*:nth-child(6){animation-delay:0.30s}html.intro .list>*:nth-child(7){animation-delay:0.35s}html.intro .list>*:nth-child(8){animation-delay:0.40s}html.intro .list>*:nth-child(9){animation-delay:0.45s}html.intro .list>*:nth-child(10){animation-delay:0.50s}
+@media (prefers-reduced-motion:reduce){.flake{display:none}.fab,.bar div{animation:none!important}html.intro .list>*{animation:none}}
+#musicBtn{position:fixed;left:66px;bottom:calc(64px + env(safe-area-inset-bottom,0px) + 14px);width:46px;height:46px;border-radius:50%;background:var(--sf);border:1px solid var(--ln);box-shadow:0 6px 16px rgba(0,0,0,.12);font-size:20px;z-index:25}
 </style></head>
 <body>
 <div id="gate"><p>กำลังโหลด…</p></div>
@@ -308,7 +341,7 @@ async function delKeyImg(k){
 async function saveKey(){
   const v=$('#keyText').value.trim();
   await safe(()=>update(ref(db,'answerKeys/'+S.openId),{text:v||null}));
-  document.activeElement.blur();const hasImg=Object.keys(S.kimgs[S.openId]||{}).length>0;toast(v||hasImg?'บันทึกเฉลยแล้ว':'ลบเฉลยแล้ว');renderDetail();
+  document.activeElement.blur();toast(v?'บันทึกเฉลยแล้ว':'ลบเฉลยแล้ว');renderDetail();
 }
 async function saveTask(){
   const subject=$('#fSubject').value.trim(),title=$('#fTitle').value.trim(),due=$('#fDue').value;
@@ -368,5 +401,64 @@ document.addEventListener('click',e=>{
 });
 $('#backdrop').addEventListener('click',closeSheets);
 $('#personInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('#personAdd').click()}});
+</script>
+<script>
+(function(){
+var d=document.documentElement,M=['auto','xmas','ny','off'],L={auto:'🎨',xmas:'🎄',ny:'🎆',off:'⚪'},mode='auto';
+try{mode=localStorage.getItem('themeMode')||'auto'}catch(e){}
+var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function auto(){var n=new Date(),m=n.getMonth()+1,x=n.getDate();if((m===11&&x>=15)||(m===12&&x<=25))return'xmas';if((m===12&&x>=26)||(m===1&&x<=10))return'ny';return'off'}
+var btn=document.createElement('button');btn.id='themeBtn';btn.setAttribute('aria-label','เปลี่ยนธีม');document.body.appendChild(btn);
+function snow(t){document.querySelectorAll('.flake').forEach(function(f){f.remove()});if(reduce||t==='off')return;
+ var g=t==='xmas'?['❄','❅','❆','✦']:['✨','⭐','🎊','✦'];
+ for(var i=0;i<22;i++){var f=document.createElement('i');f.className='flake';f.textContent=g[i%g.length];
+  f.style.cssText='left:'+Math.random()*100+'%;font-size:'+(10+Math.random()*14)+'px;animation-duration:'+(8+Math.random()*10)+'s;animation-delay:-'+Math.random()*18+'s;opacity:'+(.35+Math.random()*.5);document.body.appendChild(f)}}
+function apply(){var t=mode==='auto'?auto():mode;d.dataset.theme=t;btn.textContent=L[mode];snow(t)}
+btn.addEventListener('click',function(){mode=M[(M.indexOf(mode)+1)%M.length];try{localStorage.setItem('themeMode',mode)}catch(e){}apply();burst(innerWidth/2,innerHeight/2,30)});
+apply();
+d.classList.add('intro');setTimeout(function(){d.classList.remove('intro')},2800);
+var cv,cx,ps=[],raf=0;
+function loop(){cx.clearRect(0,0,cv.width,cv.height);
+ ps=ps.filter(function(p){return p.l>0&&p.y<cv.height+20});
+ ps.forEach(function(p){p.vy+=.28;p.vx*=.99;p.x+=p.vx;p.y+=p.vy;p.l--;p.rot+=.2;cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.globalAlpha=Math.min(1,p.l/25);cx.fillStyle=p.c;cx.fillRect(-p.r,-p.r/2,p.r*2,p.r);cx.restore()});
+ if(ps.length)raf=requestAnimationFrame(loop);else{raf=0;cx.clearRect(0,0,cv.width,cv.height)}}
+window.burst=function(x,y,n){
+ if(navigator.vibrate)navigator.vibrate(12);if(reduce)return;
+ if(!cv){cv=document.createElement('canvas');cv.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:300';document.body.appendChild(cv);cx=cv.getContext('2d')}
+ if(cv.width!==innerWidth||cv.height!==innerHeight){cv.width=innerWidth;cv.height=innerHeight}
+ var t=d.dataset.theme,C=t==='xmas'?['#D62839','#1E8E4E','#F5B83D','#ffffff','#6BC5FF']:t==='ny'?['#6D3BE8','#E8A317','#FF6BD6','#3DDC97','#ffffff']:['#2D4EF5','#17A06B','#F5B83D','#E5484D','#8B5CF6'];
+ for(var i=0;i<(n||40);i++){var a=Math.random()*Math.PI*2,s=3+Math.random()*7;ps.push({x:x,y:y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-4,r:3+Math.random()*4,c:C[i%C.length],l:60+Math.random()*30,rot:Math.random()*6})}
+ if(!raf)loop()};
+document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-toggle]');
+ if(!b||b.classList.contains('on')||b.classList.contains('ok')||b.classList.contains('dis'))return;
+ var r=b.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,b.classList.contains('primary')?90:35)},true);
+})();
+</script>
+<script>
+(function(){
+var JB='E1 E1 E2 E1 E1 E2 E1 G1 C1.5 D.5 E4 F1 F1 F1.5 F.5 F1 E1 E1 E.5 E.5 E1 D1 D1 E1 D2 G2 C4 R2';
+var WW='g1 C1 C.5 D.5 C.5 b.5 a1 a1 a1 D1 D.5 E.5 D.5 C.5 b1 g1 g1 E1 E.5 F.5 E.5 D.5 C1 a1 g.5 g.5 a1 D1 b1 C3 R3';
+var M={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+function parse(s){return s.split(' ').map(function(k){var up=k[0]==='^';if(up)k=k.slice(1);var c=k[0],d=parseFloat(k.slice(1));
+ return[c==='R'?-1:M[c.toUpperCase()]+(c===c.toLowerCase()?60:72)+(up?12:0),d]})}
+var tunes=[parse(JB),parse(WW)],ti=0,B=.55,ctx,gain,on=false,timer,wasOn=false,want=false;
+try{want=localStorage.getItem('music')==='1'}catch(e){}
+var btn=document.createElement('button');btn.id='musicBtn';btn.setAttribute('aria-label','เพลงคริสต์มาส');document.body.appendChild(btn);
+function ui(){btn.textContent=on?'🔊':'🔇'}
+function ping(m,t,d){var f=440*Math.pow(2,(m-69)/12),o=ctx.createOscillator(),h=ctx.createOscillator(),g=ctx.createGain(),e=t+Math.max(d,.5)+.9;
+ o.type='triangle';o.frequency.value=f;h.type='sine';h.frequency.value=f*2;
+ g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.8,t+.012);g.gain.exponentialRampToValueAtTime(.001,e);
+ o.connect(g);h.connect(g);g.connect(gain);o.start(t);h.start(t);o.stop(e+.1);h.stop(e+.1)}
+function next(){if(!on)return;var t=ctx.currentTime+.25;tunes[ti++%tunes.length].forEach(function(n){if(n[0]>=0)ping(n[0],t,n[1]*B);t+=n[1]*B});
+ timer=setTimeout(next,Math.max(1000,(t-ctx.currentTime+2.5)*1000))}
+function start(){var A=window.AudioContext||window.webkitAudioContext;if(!A)return;if(!ctx)ctx=new A();ctx.resume();
+ gain=ctx.createGain();gain.gain.value=.07;gain.connect(ctx.destination);on=true;ui();clearTimeout(timer);next()}
+function stop(){on=false;ui();clearTimeout(timer);try{gain.disconnect()}catch(e){}}
+function save(){try{localStorage.setItem('music',on?'1':'0')}catch(e){}}
+btn.addEventListener('click',function(){on?stop():start();want=on;save()});
+document.addEventListener('click',function(e){if(want&&!on&&e.target.id!=='musicBtn')start()},true);
+document.addEventListener('visibilitychange',function(){if(document.hidden){wasOn=on;if(on)stop()}else if(wasOn){wasOn=false;start()}});
+ui();
+})();
 </script>
 </body></html>
